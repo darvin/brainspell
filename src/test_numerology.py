@@ -18,7 +18,6 @@ class TestConvertFunctions(unittest.TestCase):
 
     def test_alpha_to_int(self):
         for alpha, num in self.__ALPHA_NUM:
-            print alpha, num
             res = numerology.alpha_to_int(alpha)
             self.assertEqual(num, res) 
 

@@ -9,43 +9,110 @@ def find_key(dic, val):
 
 
 
+class WrongDirectionName(Exception):
+    pass
+                
+class Direction(object):
+    directions = ['n', 'w', 's', 'e']
+    def __init__(self, dir_str):
+        if dir_str not in self.directions:
+            raise WrongDirectionName
+        if dir_str in self.directions:
+            self.__dir = self.directions.index(dir_str)
+        else:
+            raise AssertionError
+    
+        
+    def turn_right(self):
+        self.__dir -= 1
+        if self.__dir < 0:
+            self.__dir = len(self.directions)-1
+        return self
+    
+    def turn_left(self):
+        self.__dir +=1
+        if self.__dir >= len(self.directions):
+            self.__dir = 0
+        return self
+            
+    def __eq__(self, other):
+        return self.__dir == other.__dir
+    
+    def __hash__(self):
+        return self.__dir
+    
+    def __unicode__(self):
+        return u"Dir: '%s'" % self.directions[self.__dir]
+        
+    
+
+
+
 class Coords(object):
+    __offset_dir = {
+        Direction('n'): lambda x, y, o: (x, y-o),
+        Direction('s'): lambda x, y, o: (x, y+o),
+        Direction('w'): lambda x, y, o: (x-o, y),
+        Direction('e'): lambda x, y, o: (x+o, y),
+        }
     def __init__(self, x, y):
         self.x, self.y = x,y
+        
+    def __eq__(self, other):
+        return (self.x, self.y)==(other.x, other.y)
+    def get_offset(self, direction, offset=1):
+        return Coords(*self.__offset_dir[direction](self.x, self.y, offset))
+    
+    def move(self, direction, offset=1):
+        new = self.get_offset(direction, offset)
+        (self.x, self.y) = (new.x, new.y)    
+    def __unicode__(self):
+        return u"Coords: %d,%d" % (self.x, self.y)
+         
 
-class GameObject(object):
-    def __init__(self, world, coords):
+
+
+class MapObject(object):
+    def __init__(self, world, coord):
         self.world = world
-        self.coords = coords
-
-class Player(GameObject):
-    def __init__(self, world, coords, name):
-        super(Player, self).__init__(world, Coords(-1,-1))
+        self.world.add_object(self)
+        self.coord = coord
+    
+    def tick(self):
+        pass
+        
+class Player(object):
+    def __init__(self, name, game=None):
+        self.game = game
         self.name = name
         self.robots = []
+        
+        self.max_mana = 100
+        self.mana_regeneration = 1
+        self.mana = self.max_mana
 
-    def cast(self, cast):
+    def cast(self, cast, *args):
         if cast is 'run':
             for robot in self.robots:
                 robot.run()
         if cast is 'stop':
             for robot in self.robots:
                 robot.stop()
+        if cast is 'create_robot':
+            robot = Robot(world=self.game.gamemap, coords=args[0], player=self,\
+                          direction=args[1])
+    
+    def place_operator(self, operator, coords):
+        op = BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
 
-
-
-class Direction(object):
-    directions = ['n', 'w', 's', 'e']
-    def __init__(self, dir_str):
-        if dir_str in self.directions:
-            self.__dir = dir_str
-        else:
-            raise AssertionError
+    def tick(self):
+        if self.mana < self.max_mana:
+            self.mana += self.mana_regeneration
 
 class Memory(object):
-    def __init__(self, pointer, memory):
-        self.__pointer = pointer
-        self.__memory = memory.split('.')
+    def __init__(self):
+        self.__pointer = 0
+        self.__memory = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
 
     def inc(self):
         self.__memory[self.__pointer] += 1
@@ -58,76 +125,162 @@ class Memory(object):
 
     def dec_ptr(self):
         self.__pointer -= 1
+    
+    def output(self):
+        return  self.__memory[self.__pointer] 
 
+class WrongBFOperatorTextError(Exception):
+    pass
 
-class Robot(GameObject):
-    def __init__(self, world, coords, player_id, direction, pointer, memory):
+class BFOperator(MapObject):
+
+    valid_operators = "/\\,.<>+-[] "
+    
+    def __init__(self, world, coords, player, op_text):
+        super(BFOperator, self).__init__(world, coords)
+        self.player = player
+        if len(op_text)==1 and op_text in self.valid_operators:
+            self.operator = op_text
+        else:
+            raise WrongBFOperatorTextError
+
+import numerology
+
+class WrongLettersTextError(Exception):
+    pass
+
+class Letter(MapObject):
+    
+    def __init__(self, world, coords, letter_text):
+        super(Letter, self).__init__(world, coords)
+        numerology.alpha_to_int(letter_text)
+        if len(letter_text)==1:
+            self.letter = letter_text
+        else:
+            raise WrongBFOperatorTextError
+            
+        
+class Robot(MapObject):
+    def __init__(self, world, coords, player, direction=Direction('n')):
         super(Robot, self).__init__(world, coords)
-        self.player = self.world.get_object_by_id(player_id)
+        self.player = player
         self.player.robots.append(self)
-        self.direction = Direction(direction)
-        self.memory = Memory(pointer, memory)
+        self.direction = direction
+        self.memory = Memory()
 
-        self.commands = { 
+        self.__operators_func = { 
             "/": lambda: self.direction.turn_right,
             "\\": lambda: self.direction.turn_left,
             "+": self.memory.inc,
             "-": self.memory.dec,
             ">": self.memory.inc_ptr,
             "<": self.memory.dec_ptr,
-
+            ".": self.putchar 
         }
+        self.__running = False
+        self.output = ""
+    
+    def putchar(self):
+        self.output += numerology.int_to_alpha(self.memory.output())
+
+        
+    def run(self):
+        self.__running = True
+        
+    def stop(self):
+        self.__running = False
 
 
-    def execute(self, command):
-        self.commands[command]()
+    def execute(self, operator):
+        print "now exec:", operator.operator, "current coords: %s" % self.coord.__unicode__()
+        self.__operators_func[operator.operator]()
+    
+    def step(self):
+        print "step"
+        print self.coord.__unicode__()
+        self.coord.move(self.direction,1)
+        
+    def tick(self):
+        if self.__running:
+            self.step()
+            current_operator = self.world.get_bfoperator(self.coord)
+            if current_operator is not None:
+                self.execute(current_operator)
 
 
-GAME_OBJECTS = {
-    "player": Player,
-    "robot":Robot,
-}
+class NonUniqueMapObjectsError(Exception):
+    pass
 
-def get_game_object_type_name(o):
-    return find_key(GAME_OBJECTS, o.__class__)
-
-VALID_COMMANDS = "/\\,.<>+-[] "
-
+            
+            
 class Map(object):
     def __init__(self, size_x, size_y):
         self.size_x, self.size_y = size_x, size_y
-        self.__map = []
-        self.__game_objects = {}
+        self.map_objects = []
+        self.robots = []
+        self.bfoperators = []
+        self.letters = []
+    
+    def add_object(self, obj):
+        self.map_objects.append(obj)
+        if obj.__class__ is BFOperator:
+            self.bfoperators.append(obj)
+        if obj.__class__ is Robot:
+            self.robots.append(obj)
+        if obj.__class__ is Letter:
+            self.letters.append(obj)
+        
+    def get_objects(self, coord):
+        return [obj for obj in self.map_objects if obj.coord == coord]
+    
+    def get_bfoperator(self, coord):
+        return self.__get_unique_obj_by_coord(self.bfoperators, coord)
+    
+    def get_robot(self, coord):
+        return self.__get_unique_obj_by_coord(self.robots, coord)
 
-    def from_str(self, str):
-        f =  StringIO.StringIO(str)
-        for line in f:
-            if line=="%%\n":
-                break
-            else:
-                self.create_game_object(*line.rstrip().lstrip().split(':'))
-        for line in f:
-            mapline = []
-            for char in line:
-                if char=="\n":
-                    break
-                elif char in VALID_COMMANDS:
-                    mapline.append(char)
-                else:
-                    print "Wrong character input! '" +char +"'"
-                    raise AssertionError
-            self.__map.append(mapline)
+    def get_letter(self, coord):
+        return self.__get_unique_obj_by_coord(self.letters, coord)
+
+    @staticmethod
+    def __get_unique_obj_by_coord(l, coord):
+        results = [obj for obj in l if obj.coord == coord]
+        if len(results)==0:
+            return None
+        elif len(results)==1:
+            return results[0]
+        else:
+            raise NonUniqueMapObjectsError
 
 
-    def create_game_object(self, index, obj_type, coords, args):
-        self.__game_objects[index] = GAME_OBJECTS[obj_type](self,\
-                                                            Coords(*coords.split(',')), *args.split(','))
+    def tick(self):
+        for obj in self.map_objects:
+            obj.tick()
+        
+import demonname
+class Game(object):
+    gametypes = {
+        "small":(demonname.get_small_demon,),
+        "middle":(demonname.get_middle_demon,),
+        "great":(demonname.get_great_demon,),
+        }
+    def __init__(self, gamemap, gametype="middle"):
+        
+        self.gamemap = gamemap
+        self.players = []
+        
+        self.gametype = self.gametypes[gametype]
+        self.demon_name = self.gametype[0]()
 
-    def get_object_by_id(self, obj_id):
-        return self.__game_objects[obj_id]
-
-    def get_id_of_object(self, obj):
-        return find_key(self.__game_objects, obj)
+    def add_player(self, player):
+        self.players.append(player)
+        player.game = self
+    
+    def tick(self):
+        for player in self.players:
+            player.tick()
+        self.gamemap.tick()
+        
 
 
 if __name__=="__main__":

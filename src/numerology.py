@@ -15,7 +15,6 @@ def alpha_to_int(alpha):
         if alpha == ' ':
             return 0
         else:
-            print alpha
             raise WrongCharError
 
 def int_to_alpha(num):

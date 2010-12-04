@@ -2,44 +2,80 @@
 #-*- coding:cp1251 -*-
 
 import unittest
-import string
-import random
-import numerology
+from castfuck import Direction, Coords
+from castfuck import Game, Player, Map, Robot, Letter
+import castfuck
 
-class TestConvertFunctions(unittest.TestCase):
-    __ALPHA_NUM = (
-    (' ', 0),
-    ('A', 1),
-    ('B', 2),
-    ('C', 3),
-    ('Y', 25),
-    ('Z', 26),
-    )
-
-    def test_alpha_to_int(self):
-        for alpha, num in self.__ALPHA_NUM:
-            print alpha, num
-            res = numerology.alpha_to_int(alpha)
-            self.assertEqual(num, res) 
-
-    def test_int_to_alpha(self):
-        for alpha, num in self.__ALPHA_NUM:
-            self.assertEqual(alpha, numerology.int_to_alpha(num))
-
-    def test_sanity(self):
-        nums = [random.randint(0, 26) for x in range(100)] 
-        alphs = map(numerology.int_to_alpha, nums)
-        self.assertEqual(nums, map(numerology.alpha_to_int, alphs))
+class TestDirections(unittest.TestCase):
+    directions = ['n','w','s','e']
+    def test_turns(self):
+        d = Direction('n')
+        d.turn_left()
+        self.assertEqual(d, Direction('w'))
+        d.turn_right()
+        self.assertEqual(d, Direction('n'))
     
-    def test_fuzzy(self):
-        caps = [string.uppercase[random.randint(0,len(string.uppercase)-1)] for x in range(100)]
-        lows = [x.lower() for x in caps]
-        for cap, low in zip(caps, lows):
-            self.assertEqual(numerology.alpha_to_int(cap), numerology.alpha_to_int(low))
+    def test_sanity(self):
+        for dirname in self.directions:
+            d = Direction(dirname)
+            for x in range(4):
+                d.turn_left()
+            self.assertEqual(d, Direction(dirname))
         
-    def test_errors(self):
-        self.assertRaises(numerology.WrongCharError, numerology.alpha_to_int, '-')
-        self.assertRaises(numerology.WrongIntegerError, numerology.int_to_alpha, -1)
+            for x in range(4):
+                d.turn_right()
+            self.assertEqual(d, Direction(dirname))
 
+    def test_errors(self):
+        self.assertRaises(castfuck.WrongDirectionName, Direction, '-')
+
+        
+
+
+class TestCoords(unittest.TestCase):
+    def test_sanity(self):
+        c = Coords(1,1)
+        d = Direction('n')
+        for x in range(4):
+            c = c.get_offset(d, 5)
+            d.turn_left()
+        self.assertEqual(c, Coords(1,1))
+
+        for x in range(4):
+            c = c.get_offset(d, -1)
+            d.turn_right()
+        self.assertEqual(c, Coords(1,1))
+    
+    def test_get_offset(self):
+        c = Coords(10,1)
+        self.assertEqual(Coords(2,1), c.get_offset(Direction('w'), 8))
+        self.assertEqual(Coords(13,1), c.get_offset(Direction('e'), 3))
+        self.assertEqual(Coords(10,-1), c.get_offset(Direction('n'), 2))
+        self.assertEqual(Coords(10,2), c.get_offset(Direction('s')))
+       
+
+class TestGame(unittest.TestCase):
+    def test_one_player(self):
+        game = Game(Map(13,13))
+        pl = Player("darvin")
+        game.add_player(pl)
+        
+        self.assertEqual(pl.game, game)
+        
+        pl.cast("create_robot", Coords(-1,0), Direction('e'))
+       
+        program = "+.+.+.+.+"
+        for op, x in zip(program, range(len(program))):
+            pl.place_operator(op, Coords(x,0))
+            
+        pl.cast("run")
+        
+        for i in range(100):
+            game.tick()
+        
+        self.assertEqual("ABCD", pl.robots[0].output)
+        
+        
+    
 if __name__=="__main__":
     unittest.main()

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#-*- coding:cp1251 -*-
+#-*- coding: utf-8 -*-
 
 import sys
 import PyQt4
@@ -46,6 +46,18 @@ class DemonName(QLabel):
         self.set_name(self.game.demon_name)
 
 class PlaygroundPiece(QGraphicsItem):
+    __symbols = {
+        "+":"+",
+        "-":"-",
+        "<":"<",
+        ">":">",
+        ".":".",
+        ",":",",
+        "[":"[",
+        "]":"]",
+        "/":"↻",
+        "\\":"↺",
+    }
     def __init__(self, game, coord, parent=None, scene=None):
         super(PlaygroundPiece, self).__init__(parent=parent, scene=scene)
         self.game, self.coord = game, coord
@@ -53,17 +65,17 @@ class PlaygroundPiece(QGraphicsItem):
         self.setAcceptedMouseButtons(Qt.LeftButton)
         
     def paint(self, painter, option, widget):
-        size = self.scene().piece_size
-        x = self.coord.x*size
-        y = self.coord.y*size
-        x2 = x+size
-        y2 = y+size
-        #painter.drawRoundedRect(x,y, x2,y2, 5, 5)
+        br = self.boundingRect()
         try:
-            painter.drawText(QPointF(x,y2), self.game.gamemap.get_bfoperator(self.coord).operator)
+            painter.drawText(br.bottomLeft(), \
+                self.__symbols[self.game.gamemap.get_bfoperator(self.coord).operator])
         except AttributeError:
             pass
         #painter.drawText(QPointF(x,y2), "8")
+        if self.coord==self.game.current_coord:
+            painter.fillRect(self.boundingRect(), QColor(32,11,33))
+        
+        
         
         
     def boundingRect(self):
@@ -75,8 +87,16 @@ class PlaygroundPiece(QGraphicsItem):
         y2 = y+size
 
         return QRectF( x, y,\
-                       x2 + penWidth, y2 + penWidth)
+                       size + penWidth, size + penWidth)
     
+    def mousePressEvent(self, ev):
+        old_active_coord = self.game.current_coord
+        self.game.current_coord = self.coord
+        self.update()
+        for piece in self.scene().pieces:
+            if piece.coord == old_active_coord:
+                piece.update()
+        print "item"
         
 class PlaygroundScene(QGraphicsScene):
     piece_size = 30.0
@@ -96,10 +116,6 @@ class PlaygroundScene(QGraphicsScene):
                 self.pieces.append(piece)
                 self.addItem(piece)
                 
-            
-    def mousePressEvent(self, ev):
-        print self.mouseGrabberItem()
-        print self
         
 class Playground(QGraphicsView):
     def __init__(self, parent=None, game=None):
@@ -116,7 +132,11 @@ class Playground(QGraphicsView):
             self.setScene(self.scene) 
             self.show()
             
-            
+           
+class ManaBar(QProgressBar):
+    def text(self):
+        return "%d" % self.value()
+
 class PlayerWidget(QWidget):
     def __init__(self, player, parent=None):
         super(PlayerWidget, self).__init__(parent)
@@ -124,60 +144,135 @@ class PlayerWidget(QWidget):
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.name_label = QLabel()
-        self.mana_bar = QProgressBar()
+        self.mana_bar = ManaBar()
         layout.addWidget(self.name_label)
         layout.addWidget(self.mana_bar)
         
     def redraw_game(self):
-        print "hi player"
+        self.mana_bar.setMaximum(self.player.max_mana)
         self.name_label.setText(self.player.name)
     
     def tick(self):
         self.mana_bar.setValue(self.player.mana)
 
 
+
+
+class CastsWidget(QWidget):
+    def __init__(self, player, sidebar, parent=None):
+        super(CastsWidget, self).__init__(parent)
+        self.player = player
+        self.sidebar = sidebar
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        self.casts = {}
+        
+    def redraw_game(self):
+        avail_casts = self.player.get_casts()
+        for castname, castcost in avail_casts.items():
+            button = QPushButton(castname.replace("_"," ").capitalize())
+            self.casts[castname] = (button, castcost)
+            self.layout().addWidget(button)
+            #FIXME!
+            #button.clicked.connect(lambda: self.player.cast(castname))
+        self.casts["run"][0].clicked.connect(lambda: self.player.cast("run"))
+        self.casts["stop"][0].clicked.connect(lambda: self.player.cast("stop"))
+        self.casts["create_robot"][0].clicked.connect(self.create_robot)
+            
+    def create_robot(self):
+        self.player.cast("create_robot", self.player.game.current_coord, self.player.game.current_dir)
+        self.sidebar.redraw_game()
+    
+    def tick(self):
+        for castname, (button, castcost) in self.casts.items():
+            button.setEnabled((castcost<=self.player.mana))
+
+
+
+
 class RobotWidget(QWidget):
-    def __init__(self, player, parent=None):
+    def __init__(self, robot, parent=None):
         super(RobotWidget, self).__init__(parent)
         self.robot = robot
         layout = QVBoxLayout()
         self.setLayout(layout)
         self.memory = QLabel()
+        self.debug = QLabel()
         layout.addWidget(self.memory)
+        layout.addWidget(self.debug)
         
     def redraw_game(self):
         print "hi robo"
         pass
     
     def tick(self):
-        self.memory.setText(self.robot.memory.get_memory())
+        m, p = self.robot.memory.get_memory()
+        m_st = ""
+        for elem, i in zip(m, range(len(m))):
+            if i==p:
+                m_st += "<b>%d</b>"%elem
+            else:
+                m_st += "%d"%elem
+                
+            
+        self.memory.setText(m_st)
+        
+        self.debug.setText(self.robot.coord.__unicode__()+" "+\
+                           self.robot.direction.__unicode__())
+
+
 
 
 class SideDock(QDockWidget):
     def __init__(self, name, parent=None, game=None):
         super(SideDock, self).__init__(name, parent)
         self.game = game
-        self.layout = QVBoxLayout()
+        w = QWidget()
+        self.vblayout = QVBoxLayout()
+        w.setLayout(self.vblayout)
+        self.setWidget(w)
         self.players = []
         self.robots = {}
     
     def redraw_game(self):
+        self.players = []
+        self.robots = {}
+       
+        #fixme!
+        while True:
+            child = self.vblayout.takeAt(0)
+            if child is not None:
+                w = child.widget()
+                if w is not None:
+                    w.hide()
+                del w
+                del child
+            else:
+                break
+        
+        
         for player in self.game.players:
             player_w = PlayerWidget(player)
             self.players.append(player_w)
             self.robots[player.name] = []
-            self.layout.addWidget(player_w)
+            self.vblayout.addWidget(player_w)
             for robot in player.robots:
-               robot_widget = RobotWidget(robot)
-               self.robots[player.name].append(robot_widget)
-               self.layout.addWidget(robot_widget)
+                robot_widget = RobotWidget(robot)
+                self.robots[player.name].append(robot_widget)
+                self.vblayout.addWidget(robot_widget)
+        self.vblayout.addItem(QSpacerItem(20, 20, \
+                    QSizePolicy.Minimum, QSizePolicy.Expanding))
+        
+        self.casts = CastsWidget(parent=self, player=self.game.current_player, sidebar=self)
+        self.vblayout.addWidget(self.casts)
+        
         
         for player in self.players:
             player.redraw_game()
         for playername, robots in self.robots.items():
             for robot in robots:
                 robot.redraw_game()
-    
+        self.casts.redraw_game()
        
                
             
@@ -188,13 +283,20 @@ class SideDock(QDockWidget):
         for playername, robots in self.robots.items():
             for robot in robots:
                 robot.tick()
+                
+        self.casts.tick()
     
     
+
+
 class MainForm(QMainWindow):
     def __init__(self):
         super(MainForm, self).__init__()
         self.resize(800,600)
         self.setWindowTitle('QBrainSpell')
+        
+        self.tick_timer = QTimer(self)
+        self.tick_timer.timeout.connect(self.tick)
         
         new_game_action = QAction(u"New game", self)
         new_game_action.triggered.connect(self.new_game)
@@ -240,6 +342,8 @@ class MainForm(QMainWindow):
         toolbar.addAction(sidebar_action)
         toolbar.addAction(play_pause_action)
         toolbar.addAction(step_action)
+        
+        self.demo()
     
     def new_game(self):
         d = NewGameDialog(self)
@@ -248,13 +352,30 @@ class MainForm(QMainWindow):
             self.create_game(d.size_x.value(), d.size_y.value(), d.players.value(), "middle")
             
             self.redraw_game()
+    def demo(self):
+        demo_map = [\
+r"+++/",\
+r"   +",\
+r"   +",\
+r".++/",\
+                   ]
+        gamemap = brainspell.Map.from_list(demo_map)
+        self.game = brainspell.Game(gamemap, "great")
+        self.game.current_player = brainspell.Player(u"Player #%d"%1, self.game)
+        self.game.current_coord = brainspell.Coords(0,0)
+        self.game.current_dir = brainspell.Direction('e')
+        
+        self.redraw_game()
+        self.play_pause(True)
             
     def create_game(self, x, y, players_num, gametype):
         gamemap = brainspell.Map(x,y)
         self.game = brainspell.Game(gamemap, gametype)
         for i in range(players_num):
             pl = brainspell.Player(u"Player #%d"%i, self.game)
+        self.game.current_player = self.game.players[0]
         
+    
     def redraw_game(self):
         self.demon_name.game = self.game
         self.sidebar.game = self.game
@@ -302,8 +423,11 @@ class MainForm(QMainWindow):
         self.play_pause_action.setChecked(play)
         if play:
             self.play_pause_action.setText(u"Pause")
+            self.tick_timer.start(1000)
+            
         else:
             self.play_pause_action.setText(u"Play")
+            self.tick_timer.stop()
     
         
 if __name__=="__main__":

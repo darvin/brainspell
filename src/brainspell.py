@@ -83,17 +83,23 @@ class MapObject(object):
         pass
         
 class Player(object):
+    __casts = {
+        "create_robot": 20,
+        "run": 30,
+        "stop": 25,
+    }
     def __init__(self, name, game=None):
         self.game = game
         self.game.players.append(self)
         self.name = name
         self.robots = []
         
-        self.max_mana = 100
+        self.max_mana = 200
         self.mana_regeneration = 1
         self.mana = self.max_mana
 
     def cast(self, cast, *args):
+        print cast
         if cast is 'run':
             for robot in self.robots:
                 robot.run()
@@ -103,6 +109,8 @@ class Player(object):
         if cast is 'create_robot':
             robot = Robot(world=self.game.gamemap, coords=args[0], player=self,\
                           direction=args[1])
+        if cast in self.__casts:
+            self.mana -= self.__casts[cast]
     
     def place_operator(self, operator, coords):
         if self.game.gamemap.get_bfoperator(coords) is None:
@@ -113,6 +121,12 @@ class Player(object):
     def tick(self):
         if self.mana < self.max_mana:
             self.mana += self.mana_regeneration
+    
+    def get_casts(self):
+        """
+        Returns all availably casts and mana cost as dict
+        """
+        return self.__casts
 
 class Memory(object):
     def __init__(self):
@@ -136,8 +150,7 @@ class Memory(object):
     
     def get_memory(self):
         res = [el for el in self.__memory]
-        res[self.__pointer] = u"!%i!" % self.current()
-        return res
+        return (res, self.__pointer)
 
 class WrongBFOperatorTextError(Exception):
     pass

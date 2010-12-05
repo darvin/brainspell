@@ -85,6 +85,7 @@ class MapObject(object):
 class Player(object):
     def __init__(self, name, game=None):
         self.game = game
+        self.game.players.append(self)
         self.name = name
         self.robots = []
         
@@ -283,6 +284,8 @@ class Map(object):
                 op = self.get_bfoperator(Coords(x,y))
                 if op is not None:
                     line += op.operator
+                else:
+                    line += " "
                 
             l.append(line)
                 

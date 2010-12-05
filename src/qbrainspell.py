@@ -116,16 +116,80 @@ class Playground(QGraphicsView):
             self.setScene(self.scene) 
             self.show()
             
+            
+class PlayerWidget(QWidget):
+    def __init__(self, player, parent=None):
+        super(PlayerWidget, self).__init__(parent)
+        self.player = player
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        self.name_label = QLabel()
+        self.mana_bar = QProgressBar()
+        layout.addWidget(self.name_label)
+        layout.addWidget(self.mana_bar)
+        
+    def redraw_game(self):
+        print "hi player"
+        self.name_label.setText(self.player.name)
+    
+    def tick(self):
+        self.mana_bar.setValue(self.player.mana)
+
+
+class RobotWidget(QWidget):
+    def __init__(self, player, parent=None):
+        super(RobotWidget, self).__init__(parent)
+        self.robot = robot
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+        self.memory = QLabel()
+        layout.addWidget(self.memory)
+        
+    def redraw_game(self):
+        print "hi robo"
+        pass
+    
+    def tick(self):
+        self.memory.setText(self.robot.memory.get_memory())
+
+
 class SideDock(QDockWidget):
     def __init__(self, name, parent=None, game=None):
         super(SideDock, self).__init__(name, parent)
         self.game = game
+        self.layout = QVBoxLayout()
+        self.players = []
+        self.robots = {}
     
     def redraw_game(self):
-        pass
+        for player in self.game.players:
+            player_w = PlayerWidget(player)
+            self.players.append(player_w)
+            self.robots[player.name] = []
+            self.layout.addWidget(player_w)
+            for robot in player.robots:
+               robot_widget = RobotWidget(robot)
+               self.robots[player.name].append(robot_widget)
+               self.layout.addWidget(robot_widget)
+        
+        for player in self.players:
+            player.redraw_game()
+        for playername, robots in self.robots.items():
+            for robot in robots:
+                robot.redraw_game()
+    
+       
+               
+            
         
     def tick(self):
-        pass
+        for player in self.players:
+            player.tick()
+        for playername, robots in self.robots.items():
+            for robot in robots:
+                robot.tick()
+    
+    
 class MainForm(QMainWindow):
     def __init__(self):
         super(MainForm, self).__init__()
@@ -216,6 +280,7 @@ class MainForm(QMainWindow):
         if file_name:
             f = open(file_name)
             map_list = [line.rstrip() for line in f.readlines()]
+            f.close()
             gamemap = brainspell.Map.from_list(map_list)
             self.game = brainspell.Game(gamemap, "middle")
             pl = brainspell.Player(u"Player #1", self.game)
@@ -223,7 +288,15 @@ class MainForm(QMainWindow):
             
         
     def export(self):
-        pass
+        file_name = QFileDialog.getSaveFileName(\
+            self, u"Export as text file", directory=".",\
+            filter = u"BrainSpell and BrainFuck (*.bs *.bf *.b)")
+        if file_name:
+            f = open(file_name, "w")
+            map_list = self.game.gamemap.to_list()
+            f.writelines([line+"\n" for line in map_list])
+            f.close()
+    
         
     def play_pause(self, play):
         self.play_pause_action.setChecked(play)

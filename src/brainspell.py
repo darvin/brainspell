@@ -59,7 +59,8 @@ class Coords(object):
         self.x, self.y = x,y
         
     def __eq__(self, other):
-        return (self.x, self.y)==(other.x, other.y)
+        return self.x==other.x and self.y==other.y
+    
     def get_offset(self, direction, offset=1):
         return Coords(*self.__offset_dir[direction](self.x, self.y, offset))
     
@@ -103,7 +104,10 @@ class Player(object):
                           direction=args[1])
     
     def place_operator(self, operator, coords):
-        op = BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
+        if self.game.gamemap.get_bfoperator(coords) is None:
+            op = BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
+        else:
+            raise AssertionError
 
     def tick(self):
         if self.mana < self.max_mana:
@@ -126,8 +130,13 @@ class Memory(object):
     def dec_ptr(self):
         self.__pointer -= 1
     
-    def output(self):
+    def current(self):
         return  self.__memory[self.__pointer] 
+    
+    def get_memory(self):
+        res = [el for el in self.__memory]
+        res[self.__pointer] = u"!%i!" % self.current()
+        return res
 
 class WrongBFOperatorTextError(Exception):
     pass
@@ -169,20 +178,44 @@ class Robot(MapObject):
         self.memory = Memory()
 
         self.__operators_func = { 
-            "/": lambda: self.direction.turn_right,
-            "\\": lambda: self.direction.turn_left,
-            "+": self.memory.inc,
-            "-": self.memory.dec,
-            ">": self.memory.inc_ptr,
-            "<": self.memory.dec_ptr,
-            ".": self.putchar 
+            "\\": lambda op: None,
+            r"/": lambda op: None,
+            "+": lambda op: self.memory.inc(),
+            "-": lambda op: self.memory.dec(),
+            ">": lambda op: self.memory.inc_ptr(),
+            "<": lambda op: self.memory.dec_ptr(),
+            ".": lambda op: self.putchar(),
+            "[": lambda op: self.begin_cycle(op),
+            "]": lambda op: self.end_cycle(op),
         }
+        self.__cycle_stack = []
+        
         self.__running = False
         self.output = ""
     
     def putchar(self):
-        self.output += numerology.int_to_alpha(self.memory.output())
+        self.output += numerology.int_to_alpha(self.memory.current())
 
+    def begin_cycle(self, operator):
+        if self.memory.current()==0:
+            cur_operator = operator
+            while cur_operator.operator!="]":
+                self.step()
+                cur_operator = self.world.get_bfoperator(self.coord)
+        else:
+            self.__cycle_stack.append((operator, self.direction))
+
+            
+        
+    def end_cycle(self, operator):
+        if self.memory.current()!=0:
+            last, lastdir = self.__cycle_stack.pop()
+            self.coord = Coords(last.coord.x, last.coord.y)
+            self.direction = lastdir
+            self.begin_cycle(self.world.get_bfoperator(self.coord))
+        else:
+            self.__cycle_stack.pop()
+            
         
     def run(self):
         self.__running = True
@@ -192,13 +225,19 @@ class Robot(MapObject):
 
 
     def execute(self, operator):
-        print "now exec:", operator.operator, "current coords: %s" % self.coord.__unicode__()
-        self.__operators_func[operator.operator]()
+        print operator.operator, operator.coord.__unicode__(), self.direction.__unicode__()
+        self.__operators_func[operator.operator](operator)
     
-    def step(self):
-        print "step"
-        print self.coord.__unicode__()
+    def step(self, in_cycle=False):
+        
         self.coord.move(self.direction,1)
+        current_operator = self.world.get_bfoperator(self.coord)
+        if current_operator is not None:
+            if current_operator.operator=="/":
+                self.direction.turn_right()
+            if current_operator.operator=="\\":
+                self.direction.turn_left()
+            
         
     def tick(self):
         if self.__running:
@@ -206,6 +245,9 @@ class Robot(MapObject):
             current_operator = self.world.get_bfoperator(self.coord)
             if current_operator is not None:
                 self.execute(current_operator)
+                
+            
+            
 
 
 class NonUniqueMapObjectsError(Exception):

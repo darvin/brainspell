@@ -2,9 +2,9 @@
 #-*- coding:cp1251 -*-
 
 import unittest
-from castfuck import Direction, Coords
-from castfuck import Game, Player, Map, Robot, Letter
-import castfuck
+from brainspell import Direction, Coords
+from brainspell import Game, Player, Map, Robot, Letter
+import brainspell
 
 class TestDirections(unittest.TestCase):
     directions = ['n','w','s','e']
@@ -27,7 +27,7 @@ class TestDirections(unittest.TestCase):
             self.assertEqual(d, Direction(dirname))
 
     def test_errors(self):
-        self.assertRaises(castfuck.WrongDirectionName, Direction, '-')
+        self.assertRaises(brainspell.WrongDirectionName, Direction, '-')
 
         
 
@@ -75,7 +75,87 @@ class TestGame(unittest.TestCase):
         
         self.assertEqual("ABCD", pl.robots[0].output)
         
+    @staticmethod
+    def place_operators(player, map_as_str_list, start_x, start_y):
+        for y in range(len(map_as_str_list)):
+            for x in range(len(map_as_str_list[y])):
+                if map_as_str_list[y][x]!=' ':
+                    player.place_operator(\
+                        map_as_str_list[y][x],\
+                        Coords(start_x+x, start_y+y)\
+                    )
         
+    def test_many_programms(self):
+        programms = (
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+                ([\
+"+++/",\
+"   +",\
+"   +",\
+".++/",\
+"",\
+], "G"),
+
+            )
+        
+        for program, rightresult in programms:
+            game = Game(Map(60,60))
+            pl = Player("darvin")
+            game.add_player(pl)
+            
+            pl.cast("create_robot", Coords(-1,0), Direction('e'))
+            self.place_operators(pl, program, 0,0)
+            
+            pl.cast("run") 
+            for i in range(100):
+                game.tick()
+            pl.robots[0].coord = Coords(0,2)
+            game.tick()
+            game.tick()
+            game.tick()
+            game.tick()
+            self.assertEqual(rightresult, pl.robots[0].output)
+                
     
+    def test_cycled_programms(self):
+        programms = (
+            #(["+++[>++<-]>."], "F"),
+            #(["+++[>+++++<-]>."], "O"),
+            #(["++[>+++[>+++<-]<-]>>."], "R"),
+            #(["++[>++[>+++++<-]<-]>>+."], "U"),
+            ([
+r"++[/  />+++++/     ",                
+r"   >  [      <     ",                
+r"   \++\      -     ",                
+r"             ]     ",                
+r"      .+>>]-</     ",                
+r"                   ",                
+r"                   ",                
+r"                   ",                
+r"                   ",                
+r"                   ",                
+r"                   ",                
+                
+                
+                ], "U"),
+                    )
+        
+        for program, rightresult in programms:
+            game = Game(Map(60,60))
+            pl = Player("darvin")
+            game.add_player(pl)
+            
+            pl.cast("create_robot", Coords(-1,0), Direction('e'))
+            self.place_operators(pl, program, 0,0)
+            
+            pl.cast("run") 
+            for i in range(100):
+                game.tick()
+            
+            self.assertEqual(rightresult, pl.robots[0].output)
+                
 if __name__=="__main__":
     unittest.main()

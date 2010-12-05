@@ -32,8 +32,18 @@ class NewGameDialog(QDialog):
 
         
 class DemonName(QLabel):
+    def __init__(self, parent=None, game=None):
+        super(DemonName, self).__init__(parent=parent)
+        self.game=game
+     
     def set_name(self, name):
         self.setText(u"Current demon: "+name)
+        
+    def tick(self):
+        pass
+
+    def redraw_game(self):
+        self.set_name(self.game.demon_name)
 
 class PlaygroundPiece(QGraphicsItem):
     def __init__(self, game, coord, parent=None, scene=None):
@@ -53,7 +63,7 @@ class PlaygroundPiece(QGraphicsItem):
             painter.drawText(QPointF(x,y2), self.game.gamemap.get_bfoperator(self.coord).operator)
         except AttributeError:
             pass
-        painter.drawText(QPointF(x,y2), "8")
+        #painter.drawText(QPointF(x,y2), "8")
         
         
     def boundingRect(self):
@@ -97,14 +107,25 @@ class Playground(QGraphicsView):
         self.game = game
         self.redraw_game()
         
+    def tick(self):
+        pass
+    
     def redraw_game(self):
         if self.game is not None:
             self.scene = PlaygroundScene(parent=self, game=self.game)
             self.setScene(self.scene) 
             self.show()
             
-            
+class SideDock(QDockWidget):
+    def __init__(self, name, parent=None, game=None):
+        super(SideDock, self).__init__(name, parent)
+        self.game = game
+    
+    def redraw_game(self):
+        pass
         
+    def tick(self):
+        pass
 class MainForm(QMainWindow):
     def __init__(self):
         super(MainForm, self).__init__()
@@ -115,9 +136,25 @@ class MainForm(QMainWindow):
         new_game_action.triggered.connect(self.new_game)
         exit_action = QAction(u"Exit", self)
         exit_action.triggered.connect(self.close)
+        import_action = QAction(u"Import", self)
+        import_action.triggered.connect(self.import_)
+        export_action = QAction(u"Export", self)
+        export_action.triggered.connect(self.export)
+
+        self.play_pause_action = play_pause_action = QAction(u"Play", self)
+        play_pause_action.setCheckable(True)
+        play_pause_action.toggled.connect(self.play_pause)
+        step_action = QAction(u"Step", self)
+        step_action.triggered.connect(self.step)
+
+        
         menubar = self.menuBar()
         file_menu = menubar.addMenu(u"&Game")
         file_menu.addAction(new_game_action)
+        file_menu.addAction(play_pause_action)
+        file_menu.addAction(step_action)
+        file_menu.addAction(import_action)
+        file_menu.addAction(export_action)
         file_menu.addAction(exit_action)
         
         layout = QVBoxLayout()
@@ -126,8 +163,19 @@ class MainForm(QMainWindow):
         self.setCentralWidget(widg)
         self.demon_name = DemonName()
         self.playground = Playground()
+        self.sidebar = SideDock(u"Information", self)
+        self.sidebar.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.sidebar)
+        sidebar_action = self.sidebar.toggleViewAction()
+        
         layout.addWidget(self.demon_name)
         layout.addWidget(self.playground)
+        
+        toolbar = self.addToolBar("main")
+        toolbar.addAction(new_game_action)
+        toolbar.addAction(sidebar_action)
+        toolbar.addAction(play_pause_action)
+        toolbar.addAction(step_action)
     
     def new_game(self):
         d = NewGameDialog(self)
@@ -144,11 +192,47 @@ class MainForm(QMainWindow):
             pl = brainspell.Player(u"Player #%d"%i, self.game)
         
     def redraw_game(self):
-        self.demon_name.set_name(self.game.demon_name)
+        self.demon_name.game = self.game
+        self.sidebar.game = self.game
         self.playground.game = self.game
+        self.demon_name.redraw_game()
+        self.sidebar.redraw_game()
         self.playground.redraw_game()
         
-
+    def tick(self):
+        self.game.tick()
+        self.demon_name.tick()
+        self.playground.tick()
+        self.sidebar.tick()
+    
+    def step(self):
+        self.play_pause(play=False)
+        self.tick()
+    
+    def import_(self):
+        file_name = QFileDialog.getOpenFileName(\
+            self, u"Import text file", directory=".",\
+            filter = u"BrainSpell and BrainFuck (*.bs *.bf *.b)")
+        if file_name:
+            f = open(file_name)
+            map_list = [line.rstrip() for line in f.readlines()]
+            gamemap = brainspell.Map.from_list(map_list)
+            self.game = brainspell.Game(gamemap, "middle")
+            pl = brainspell.Player(u"Player #1", self.game)
+            self.redraw_game()
+            
+        
+    def export(self):
+        pass
+        
+    def play_pause(self, play):
+        self.play_pause_action.setChecked(play)
+        if play:
+            self.play_pause_action.setText(u"Pause")
+        else:
+            self.play_pause_action.setText(u"Play")
+    
+        
 if __name__=="__main__":
     app = QApplication(sys.argv)
     w = MainForm()

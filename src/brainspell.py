@@ -263,6 +263,31 @@ class Map(object):
         self.bfoperators = []
         self.letters = []
     
+    @classmethod
+    def from_list(cls, map_as_str_list):
+        print map_as_str_list
+        m = cls(max([len(line) for line in map_as_str_list]),len(map_as_str_list))
+        for y in range(len(map_as_str_list)):
+            for x in range(len(map_as_str_list[y])):
+                if map_as_str_list[y][x]!=' ':
+                    BFOperator(m, Coords(x, y),\
+                        None, map_as_str_list[y][x])
+        return m
+    
+    def to_list(self):
+        l = []
+        
+        for y in range(self.size_y):
+            line = ""
+            for x in range(self.size_x):
+                op = self.get_bfoperator(Coords(x,y))
+                if op is not None:
+                    line += op.operator
+                
+            l.append(line)
+                
+        return l
+        
     def add_object(self, obj):
         self.map_objects.append(obj)
         if obj.__class__ is BFOperator:

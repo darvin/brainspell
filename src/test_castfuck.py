@@ -156,6 +156,34 @@ r"                   ",
                 game.tick()
             
             self.assertEqual(rightresult, pl.robots[0].output)
-                
+    def test_import(self):
+        programms = (
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+                ([\
+"+++/",\
+"   +",\
+"   +",\
+".++/",\
+"",\
+], "G"),
+
+            )
+        
+        for program, rightresult in programms:
+            mapp = Map.from_list(program)
+            game = Game(mapp)
+            pl = Player("darvin")
+            game.add_player(pl)
+            
+            pl.cast("create_robot", Coords(-1,0), Direction('e'))
+            
+            pl.cast("run") 
+            for i in range(100):
+                game.tick()
+            self.assertEqual(rightresult, pl.robots[0].output)
+             
 if __name__=="__main__":
     unittest.main()

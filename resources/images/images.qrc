@@ -1,0 +1,14 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+  <file>clockwise.svg</file>
+  <file>comma.svg</file>
+  <file>dot.svg</file>
+  <file>greaterthan.svg</file>
+  <file>leftbracket.svg</file>
+  <file>lessthan.svg</file>
+  <file>minus.svg</file>
+  <file>plus.svg</file>
+  <file>rightbracket.svg</file>
+
+</qresource>
+</RCC>

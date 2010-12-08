@@ -2,12 +2,28 @@
 #-*- coding: utf-8 -*-
 
 import sys
+import copy
+import functools
 import PyQt4
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 import brainspell
 import images_rc
 from utils import odict
+
+PLAYER_COLORS = [
+    QColor(12,66,12),
+    QColor(120,61,12),
+    QColor(110,12,34),
+    QColor(12,66,12),
+    QColor(12,66,12),
+    QColor(12,66,12),
+]
+
+def create_colored_image(filename, qcolor):
+    return QImage(filename)
+    f = open(filename)
+    print f.readlines()
 
 
 class NewGameDialog(QDialog):
@@ -58,16 +74,25 @@ class PlaygroundPiece(QGraphicsItem):
     def paint(self, painter, option, widget):
         br = self.boundingRect()
         try:
-            op = self.game.gamemap.get_bfoperator(self.coord).operator
+            op, op_player = self.game.gamemap.get_bfoperator(self.coord).operator,\
+                            self.game.gamemap.get_bfoperator(self.coord).player,
         except AttributeError:
             op = None
-        if op is not None:            
-            painter.drawImage(br, 
-                self.operator_actions[op].qimage)
-            print op, "draw"
-        #painter.drawText(QPointF(x,y2), "8")
-        if self.coord==self.game.current_coord:
-            painter.fillRect(self.boundingRect(), QColor(32,11,33))
+        try:
+            letter = self.game.gamemap.get_letter(self.coord).letter
+        except AttributeError:
+            letter = None
+        if op is not None and op_player is not None: 
+            painter.drawImage(br, \
+                                  op_player.operator_qimages[op])
+        elif op is not None:
+            painter.drawImage(br, \
+                                  self.operator_actions[op].qimage)
+                
+        if letter is not None:
+            painter.drawText(br, letter)
+        #if self.coord==self.game.current_coord:
+            #painter.fillRect(self.boundingRect(), QColor(32,11,33))
         
         
         
@@ -84,13 +109,10 @@ class PlaygroundPiece(QGraphicsItem):
                        size + penWidth, size + penWidth)
     
     def mousePressEvent(self, ev):
-        old_active_coord = self.game.current_coord
+        oldcoord = self.game.current_coord
         self.game.current_coord = self.coord
-        self.update()
-        for piece in self.scene().pieces:
-            if piece.coord == old_active_coord:
-                piece.update()
-        
+        self.scene().current_coord_change(oldcoord, self.coord)
+                
 class PlaygroundScene(QGraphicsScene):
     piece_size = 30.0
     def __init__(self, operator_actions, parent=None, game=None):
@@ -109,7 +131,23 @@ class PlaygroundScene(QGraphicsScene):
                 piece = PlaygroundPiece(self.game, brainspell.Coords(x,y), self.operator_actions)
                 self.pieces.append(piece)
                 self.addItem(piece)
-                
+        
+    def current_coord_change(self, oldcoord, newcoord):
+        pass
+        #for piece in self.pieces:
+            #if piece.coord in (oldcoord, newcoord):
+                #piece.update()
+         
+    def update_piece(self, coord):
+        for piece in self.pieces:
+            if piece.coord == coord:
+                piece.update()
+    
+    def tick(self):
+        #FIXME DEBUG ONLY
+        for piece in self.pieces:
+            piece.update()
+        
         
 class Playground(QGraphicsView):
     def __init__(self, operator_actions, parent=None, game=None):
@@ -118,8 +156,11 @@ class Playground(QGraphicsView):
         self.game = game
         self.redraw_game()
         
+    def update_piece(self, coord):
+        self.scene.update_piece(coord)
+        
     def tick(self):
-        pass
+        self.scene.tick()
     
     def redraw_game(self):
         if self.game is not None:
@@ -174,6 +215,11 @@ class PlayerWidget(QWidget):
         layout.addWidget(self.name_label)
         layout.addWidget(self.mana_bar)
         self.robots = []
+        pal = QPalette()
+        pal.setColor(QPalette.Window, self.player.qcolor)
+        pal.setColor(QPalette.WindowText, Qt.white)
+        self.setPalette(pal)
+        self.setAutoFillBackground(True)
         
     def redraw_game(self):
         self.mana_bar.setMaximum(self.player.max_mana)
@@ -351,7 +397,7 @@ class MainForm(QMainWindow):
         for cast, (casttitle, func) in self.__casts.items():
             ca = QAction(casttitle, self)
             if func is None:
-                ca.triggered.connect(lambda: self.game.current_player.cast(cast))
+                ca.triggered.connect(functools.partial(self.cast,cast))
             else:
                 ca.triggered.connect(func)
             self.cast_actions[cast] = ca
@@ -361,9 +407,10 @@ class MainForm(QMainWindow):
         self.operator_actions = odict()
         for operator, (optitle, opiconname, func) in self.__operators.items():
             oa = QAction(QIcon(":/"+opiconname+".svg"),optitle, self)
+               
             oa.qimage = QImage(":/"+opiconname+".svg")
             if func is None:
-                oa.triggered.connect(lambda: self.game.current_player.place_operator(operator, self.game.current_coord))
+                oa.triggered.connect(functools.partial(self.place_operator, operator))
             else:
                 oa.triggered.connect(func)
             self.operator_actions[operator] = oa
@@ -425,11 +472,31 @@ r".++/",\
         self.game = brainspell.Game(gamemap, gametype)
         for i in range(players_num):
             pl = brainspell.Player(u"Player #%d"%i, self.game)
+            pl.qcolor = PLAYER_COLORS[i]
         self.game.current_player = self.game.players[0]
         self.game.current_coord = brainspell.Coords(0,0)
         self.game.current_dir = brainspell.Direction('e')
+        
+        for i, player in enumerate(self.game.players):
+            player.operator_qimages = {}
+            for operator, (optitle, opiconname, func) in self.__operators.items():
+                qi = create_colored_image(":/"+opiconname+".svg", PLAYER_COLORS[i])
+                player.operator_qimages[operator] = qi
        
+    def place_operator(self, operator):
+        self.game.current_player.place_operator(operator, self.game.current_coord)
+        self.playground.update_piece(self.game.current_coord)
+        #self.move_current_coord(self.game.current_dir)
     
+    def move_current_coord(self, direction):
+        oldcoord = brainspell.Coords(self.game.current_coord.x , self.game.current_coord.y)
+        self.game.current_coord.move(direction)
+        self.playground.scene.current_coord_change(oldcoord, self.game.current_coord)
+        
+    def cast(self, cast):
+        self.game.current_player.cast(cast)
+        
+        
     def redraw_game(self):
         self.demon_name.game = self.game
         self.sidebar.game = self.game

@@ -1,4 +1,6 @@
 import StringIO
+import random
+import string
 
 
 def find_key(dic, val):
@@ -65,8 +67,8 @@ class Coords(object):
         return Coords(*self.__offset_dir[direction](self.x, self.y, offset))
     
     def move(self, direction, offset=1):
-        new = self.get_offset(direction, offset)
-        (self.x, self.y) = (new.x, new.y)    
+        #new = self.get_offset(direction, offset)
+        (self.x, self.y) = (self.__offset_dir[direction](self.x, self.y, offset))
     def __unicode__(self):
         return u"Coords: %d,%d" % (self.x, self.y)
          
@@ -75,10 +77,18 @@ class Coords(object):
 
 class MapObject(object):
     def __init__(self, world, coord):
+        self.__coord = coord
         self.world = world
         self.world.add_object(self)
-        self.coord = coord
+        
+        print self.world.get_bfoperator(self.coord)
+    coord = property(lambda self: self.__coord)
     
+        
+        
+        
+        
+        
     def tick(self):
         pass
         
@@ -88,7 +98,7 @@ class Player(object):
         "run": 30,
         "stop": 25,
     }
-    def __init__(self, name, game=None):
+    def __init__(self, name, game):
         self.game = game
         self.game.players.append(self)
         self.name = name
@@ -113,10 +123,7 @@ class Player(object):
             self.mana -= self.__casts[cast]
     
     def place_operator(self, operator, coords):
-        if self.game.gamemap.get_bfoperator(coords) is None:
-            op = BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
-        else:
-            raise AssertionError
+        op = BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
 
     def tick(self):
         if self.mana < self.max_mana:
@@ -270,17 +277,28 @@ class NonUniqueMapObjectsError(Exception):
             
             
 class Map(object):
-    def __init__(self, size_x, size_y):
+    def __init__(self, size_x, size_y, place_letters = True):
         self.size_x, self.size_y = size_x, size_y
         self.map_objects = []
         self.robots = []
         self.bfoperators = []
         self.letters = []
+        
+        if place_letters:
+            self.place_random_letters(20)
+    
+    def place_random_letters(self, prob):
+        for x in range(self.size_x):
+            for y in range(self.size_y):
+                if random.randint(0,100)<prob:
+                    l = string.uppercase[random.randint(0,len(string.uppercase)-1)]
+                    Letter(self, Coords(x, y), l)
+                
     
     @classmethod
     def from_list(cls, map_as_str_list):
         print map_as_str_list
-        m = cls(max([len(line) for line in map_as_str_list]),len(map_as_str_list))
+        m = cls(max([len(line) for line in map_as_str_list]),len(map_as_str_list), place_letters = False)
         for y in range(len(map_as_str_list)):
             for x in range(len(map_as_str_list[y])):
                 if map_as_str_list[y][x]!=' ':
@@ -307,16 +325,22 @@ class Map(object):
     def add_object(self, obj):
         self.map_objects.append(obj)
         if obj.__class__ is BFOperator:
-            self.bfoperators.append(obj)
+            objs = self.bfoperators
         if obj.__class__ is Robot:
-            self.robots.append(obj)
+            objs = self.robots
         if obj.__class__ is Letter:
-            self.letters.append(obj)
+            objs = self.letters
+        
+        for old_obj in objs:
+            if old_obj.coord == obj.coord:
+                objs.remove(old_obj)
+        objs.append(obj)
         
     def get_objects(self, coord):
         return [obj for obj in self.map_objects if obj.coord == coord]
     
     def get_bfoperator(self, coord):
+        print len(self.bfoperators)
         return self.__get_unique_obj_by_coord(self.bfoperators, coord)
     
     def get_robot(self, coord):
@@ -328,6 +352,7 @@ class Map(object):
     @staticmethod
     def __get_unique_obj_by_coord(l, coord):
         results = [obj for obj in l if obj.coord == coord]
+        print len(l), len(results)
         if len(results)==0:
             return None
         elif len(results)==1:
@@ -343,6 +368,7 @@ class Map(object):
 import demonname
 class Game(object):
     gametypes = {
+        "demo":(demonname.get_small_demon,),
         "small":(demonname.get_small_demon,),
         "middle":(demonname.get_middle_demon,),
         "great":(demonname.get_great_demon,),

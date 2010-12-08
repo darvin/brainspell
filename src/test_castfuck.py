@@ -55,10 +55,40 @@ class TestCoords(unittest.TestCase):
        
 
 class TestGame(unittest.TestCase):
+
+    def test_mapobjects_replace(self):
+        game = Game(Map(13,13))
+        pl = Player("darvin", game)
+        
+        self.assertEqual(pl.game, game)
+        
+        pl.cast("create_robot", Coords(-1,0), Direction('e'))
+       
+        program = "+.+.+.+.+"
+        for op, x in zip(program, range(len(program))):
+            pl.place_operator(op, Coords(x,0))
+        
+        pl.cast("run")
+        for i in range(100):
+            game.tick()
+        
+
+        program = "+++.+.+.+"
+        for op, x in zip(program, range(len(program))):
+            pl.place_operator(op, Coords(x,0))
+            
+        pl.cast("create_robot", Coords(-1,0), Direction('e'))
+       
+        pl.cast("run")
+        
+        for i in range(100):
+            game.tick()
+        
+        self.assertEqual("CDE", pl.robots[1].output)
+     
     def test_one_player(self):
         game = Game(Map(13,13))
-        pl = Player("darvin")
-        game.add_player(pl)
+        pl = Player("darvin", game)
         
         self.assertEqual(pl.game, game)
         
@@ -103,8 +133,7 @@ class TestGame(unittest.TestCase):
         
         for program, rightresult in programms:
             game = Game(Map(60,60))
-            pl = Player("darvin")
-            game.add_player(pl)
+            pl = Player("darvin",game)
             
             pl.cast("create_robot", Coords(-1,0), Direction('e'))
             self.place_operators(pl, program, 0,0)
@@ -145,8 +174,7 @@ r"                   ",
         
         for program, rightresult in programms:
             game = Game(Map(60,60))
-            pl = Player("darvin")
-            game.add_player(pl)
+            pl = Player("darvin",game)
             
             pl.cast("create_robot", Coords(-1,0), Direction('e'))
             self.place_operators(pl, program, 0,0)
@@ -175,8 +203,7 @@ r"                   ",
         for program, rightresult in programms:
             mapp = Map.from_list(program)
             game = Game(mapp)
-            pl = Player("darvin")
-            game.add_player(pl)
+            pl = Player("darvin", game)
             
             pl.cast("create_robot", Coords(-1,0), Direction('e'))
             

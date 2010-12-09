@@ -15,7 +15,6 @@ class WrongDirectionName(Exception):
     pass
                 
 class Direction(object):
-    #directions = ['n', 'w', 's', 'e']
     directions = ['n', 'w', 's', 'e']
     def __init__(self, dir_str):
         if dir_str not in self.directions:

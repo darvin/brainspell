@@ -81,15 +81,12 @@ class PieceSizedQGraphicsSvgItem(QGraphicsSvgItem):
 
     
     def move_to(self, coord):
-        self.timer = QTimeLine(300)
-        self.timer.setFrameRange(0, 100)
-        self.animation = QGraphicsItemAnimation()
-        self.animation.setItem(self)
-        self.animation.setTimeLine(self.timer)
-            
-        self.animation.setPosAt(1, self.coords_to_qpointf(coord))
-        self.timer.start()
-    
+        self.__animation_m = animation =  QPropertyAnimation(self, "pos")
+        animation.setDuration(300);
+        animation.setStartValue(self.pos());
+        animation.setEndValue(self.coords_to_qpointf(coord))
+
+        animation.start()
     def rotate_to(self, direction):
         self.setTransformOriginPoint(self.scene().piece_size/2.0, self.scene().piece_size/2.0)
         self.__animation_r = animation =  QPropertyAnimation(self, "rotation")
@@ -184,7 +181,7 @@ class RobotItem(PieceSizedQGraphicsSvgItem):
             
               
 class PlaygroundScene(QGraphicsScene):
-    piece_size = 30.0
+    piece_size = 50.0
     def __init__(self, operator_actions, parent=None, game=None):
         super(PlaygroundScene, self).__init__(parent=parent)
         self.game = game
@@ -446,7 +443,7 @@ class MainForm(QMainWindow):
            ( ".", (u"Output current register", "dot", None)),
            ( ",", (u"Input to current register", "comma", None)),
            ( "/", (u"Rotate robot clockwise", "clockwise", None)),
-           ( "\\", (u"Rotate robot anticlockwise", "clockwise", None)),
+           ( "\\", (u"Rotate robot anticlockwise", "anticlockwise", None)),
         ))
 
         super(MainForm, self).__init__()

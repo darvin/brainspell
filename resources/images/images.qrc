@@ -1,5 +1,7 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+  <file>cursor.svg</file>
+  <file>robot.svg</file>
   <file>clockwise.svg</file>
   <file>comma.svg</file>
   <file>dot.svg</file>

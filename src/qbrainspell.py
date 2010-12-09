@@ -7,6 +7,7 @@ import functools
 import PyQt4
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
+from PyQt4.QtSvg import *
 import brainspell
 import images_rc
 from utils import odict
@@ -23,7 +24,6 @@ PLAYER_COLORS = [
 def create_colored_image(filename, qcolor):
     return QImage(filename)
     f = open(filename)
-    print f.readlines()
 
 
 class NewGameDialog(QDialog):
@@ -62,40 +62,77 @@ class DemonName(QLabel):
 
     def redraw_game(self):
         self.set_name(self.game.demon_name)
+   
+class PieceSizedQGraphicsSvgItem(QGraphicsSvgItem):
+    def __init__(self, filename=None, parent=None):
+        if filename is not None:
+            super(PieceSizedQGraphicsSvgItem, self).__init__(QLatin1String(filename), parent=parent)
+        else:
+            super(PieceSizedQGraphicsSvgItem, self).__init__(parent=parent)
+    def paint(self, painter, option, widget):
+        self.renderer().render(painter, self.boundingRect())
+    def boundingRect(self):
+        br = super(PieceSizedQGraphicsSvgItem, self).boundingRect()
+        size = self.scene().piece_size
+        br.setSize(QSizeF(size, size))
+        return br
+    
+    def coords_to_qpointf(self, coord):
+        x, y = coord.x*self.scene().piece_size, \
+                 coord.y*self.scene().piece_size
+        return QPointF(x,y)
 
+    
+    def move_to(self, coord):
+        self.timer = QTimeLine(300)
+        self.timer.setFrameRange(0, 100)
+        self.cursor_animation = QGraphicsItemAnimation()
+        self.cursor_animation.setItem(self)
+        self.cursor_animation.setTimeLine(self.timer)
+            
+        self.cursor_animation.setPosAt(1, self.coords_to_qpointf(coord))
+        self.timer.start()
+ 
+class OperatorItem(PieceSizedQGraphicsSvgItem):
+    def __init__(self, coords, operator_actions, parent=None):
+        super(OperatorItem, self).__init__(None, parent=parent)
+        self.operator_actions = operator_actions
+        self.setPos(self.coords_to_qpointf(coords))
+    def set_operator(self, operator):
+        if operator.player is not None:
+            self.setSharedRenderer(operator.player.operator_svgs[operator.operator])
+        else:
+            self.setSharedRenderer(self.operator_actions[operator.operator].svg_renderer)
+        
+      
 class PlaygroundPiece(QGraphicsItem):
     def __init__(self, game, coord, operator_actions, parent=None, scene=None):
         super(PlaygroundPiece, self).__init__(parent=parent, scene=scene)
         self.game, self.coord = game, coord
         self.active = False
         self.operator_actions = operator_actions
+        self.__operator_item = OperatorItem(self.coord, self.operator_actions, self)
         self.setAcceptedMouseButtons(Qt.LeftButton)
         
     def paint(self, painter, option, widget):
         br = self.boundingRect()
         try:
-            op, op_player = self.game.gamemap.get_bfoperator(self.coord).operator,\
-                            self.game.gamemap.get_bfoperator(self.coord).player,
-        except AttributeError:
-            op = None
-        try:
             letter = self.game.gamemap.get_letter(self.coord).letter
         except AttributeError:
             letter = None
-        if op is not None and op_player is not None: 
-            painter.drawImage(br, \
-                                  op_player.operator_qimages[op])
-        elif op is not None:
-            painter.drawImage(br, \
-                                  self.operator_actions[op].qimage)
-                
         if letter is not None:
             painter.drawText(br, letter)
-        #if self.coord==self.game.current_coord:
-            #painter.fillRect(self.boundingRect(), QColor(32,11,33))
         
-        
-        
+    def update(self):
+        try:
+            op = self.game.gamemap.get_bfoperator(self.coord)
+        except AttributeError:
+            op = None
+
+        if op is not None:
+            self.__operator_item.set_operator(op)
+           
+         
         
     def boundingRect(self):
         penWidth = 1.0
@@ -109,10 +146,30 @@ class PlaygroundPiece(QGraphicsItem):
                        size + penWidth, size + penWidth)
     
     def mousePressEvent(self, ev):
-        oldcoord = self.game.current_coord
-        self.game.current_coord = self.coord
-        self.scene().current_coord_change(oldcoord, self.coord)
-                
+        self.scene().current_coord_change(self.coord)
+
+     
+
+class CursorItem(PieceSizedQGraphicsSvgItem):
+    def __init__(self, game, parent=None):
+        super(CursorItem, self).__init__(":/cursor.svg", parent=parent)
+
+    
+
+              
+class RobotItem(PieceSizedQGraphicsSvgItem):
+    def __init__(self, robot, parent=None):
+            
+        super(RobotItem, self).__init__(parent=parent)
+        self.setSharedRenderer(robot.player.robot_svg)
+        self.robot = robot
+    
+    def tick(self, first=False):
+        if first:
+            self.setPos(self.coords_to_qpointf(self.robot.coord))
+        else:
+            self.move_to(self.robot.coord)
+              
 class PlaygroundScene(QGraphicsScene):
     piece_size = 30.0
     def __init__(self, operator_actions, parent=None, game=None):
@@ -128,26 +185,40 @@ class PlaygroundScene(QGraphicsScene):
         
         for x in range(self.game.gamemap.size_x):
             for y in range(self.game.gamemap.size_y):
-                piece = PlaygroundPiece(self.game, brainspell.Coords(x,y), self.operator_actions)
+                piece = PlaygroundPiece(self.game, brainspell.Coords(x,y), self.operator_actions, scene = self)
                 self.pieces.append(piece)
-                self.addItem(piece)
         
-    def current_coord_change(self, oldcoord, newcoord):
-        pass
-        #for piece in self.pieces:
-            #if piece.coord in (oldcoord, newcoord):
-                #piece.update()
-         
+        self.cursor_item = CursorItem(game=self.game)
+        self.addItem(self.cursor_item)
+        
+        self.robots = {}
+        
+        for piece in self.pieces:
+            piece.update()
+        
+
+        
+    def current_coord_change(self, coord):
+        self.cursor_item.move_to(coord)
+        self.game.current_coord = brainspell.Coords(coord.x, coord.y)
+        
     def update_piece(self, coord):
         for piece in self.pieces:
             if piece.coord == coord:
                 piece.update()
     
     def tick(self):
+        for robot in self.robots.values():
+            robot.tick()
+            
         #FIXME DEBUG ONLY
-        for piece in self.pieces:
-            piece.update()
+        #for piece in self.pieces:
+        #    piece.update()
         
+    def add_robot(self, robot):
+        self.robots[robot] = r = RobotItem(robot)
+        self.addItem(r)
+        r.tick(first=True)
         
 class Playground(QGraphicsView):
     def __init__(self, operator_actions, parent=None, game=None):
@@ -167,6 +238,8 @@ class Playground(QGraphicsView):
             self.scene = PlaygroundScene(parent=self, game=self.game, operator_actions=self.operator_actions)
             self.setScene(self.scene) 
             self.show()
+    def add_robot(self, robot):
+        self.scene.add_robot(robot)
  
 class RobotWidget(QWidget):
     def __init__(self, robot, parent=None):
@@ -242,7 +315,6 @@ class PlayerWidget(QWidget):
                 if robot_w.robot == robot:
                     new = False
             if new:
-                print "new robot"
                 self.add_robot(robot)
                 
         for robot in self.robots:
@@ -327,7 +399,6 @@ class SideDock(QDockWidget):
         oper_toolbar = QToolBar()
         self.vblayout.addWidget(oper_toolbar)
         for operator, oa in self.operator_actions.items():
-            print operator
             oper_toolbar.addAction(oa)
             
        
@@ -408,7 +479,7 @@ class MainForm(QMainWindow):
         for operator, (optitle, opiconname, func) in self.__operators.items():
             oa = QAction(QIcon(":/"+opiconname+".svg"),optitle, self)
                
-            oa.qimage = QImage(":/"+opiconname+".svg")
+            oa.svg_renderer = QSvgRenderer(":/"+opiconname+".svg")
             if func is None:
                 oa.triggered.connect(functools.partial(self.place_operator, operator))
             else:
@@ -478,10 +549,13 @@ r".++/",\
         self.game.current_dir = brainspell.Direction('e')
         
         for i, player in enumerate(self.game.players):
-            player.operator_qimages = {}
+            player.operator_svgs = {}
+            player.robot_svg = QSvgRenderer(":/robot.svg")# PLAYER_COLORS[i])
+
             for operator, (optitle, opiconname, func) in self.__operators.items():
-                qi = create_colored_image(":/"+opiconname+".svg", PLAYER_COLORS[i])
-                player.operator_qimages[operator] = qi
+                #FIXME!!!
+                qi = QSvgRenderer(":/"+opiconname+".svg")# PLAYER_COLORS[i])
+                player.operator_svgs[operator] = qi
        
     def place_operator(self, operator):
         self.game.current_player.place_operator(operator, self.game.current_coord)
@@ -549,7 +623,8 @@ r".++/",\
             self.play_pause_action.setText(u"Play")
             self.tick_timer.stop()
     def create_robot(self):
-        self.game.current_player.cast("create_robot", self.game.current_coord, self.game.current_dir)
+        r = self.game.current_player.cast("create_robot", self.game.current_coord, self.game.current_dir)
+        self.playground.add_robot(r)
     
    
 if __name__=="__main__":

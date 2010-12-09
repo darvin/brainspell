@@ -81,7 +81,6 @@ class MapObject(object):
         self.world = world
         self.world.add_object(self)
         
-        print self.world.get_bfoperator(self.coord)
     coord = property(lambda self: self.__coord)
     
         
@@ -109,7 +108,6 @@ class Player(object):
         self.mana = self.max_mana
 
     def cast(self, cast, *args):
-        print cast
         if cast is 'run':
             for robot in self.robots:
                 robot.run()
@@ -119,6 +117,7 @@ class Player(object):
         if cast is 'create_robot':
             robot = Robot(world=self.game.gamemap, coords=args[0], player=self,\
                           direction=args[1])
+            return robot
         if cast in self.__casts:
             self.mana -= self.__casts[cast]
     
@@ -246,7 +245,6 @@ class Robot(MapObject):
 
 
     def execute(self, operator):
-        print operator.operator, operator.coord.__unicode__(), self.direction.__unicode__()
         self.__operators_func[operator.operator](operator)
     
     def step(self, in_cycle=False):
@@ -297,7 +295,6 @@ class Map(object):
     
     @classmethod
     def from_list(cls, map_as_str_list):
-        print map_as_str_list
         m = cls(max([len(line) for line in map_as_str_list]),len(map_as_str_list), place_letters = False)
         for y in range(len(map_as_str_list)):
             for x in range(len(map_as_str_list[y])):
@@ -331,16 +328,19 @@ class Map(object):
         if obj.__class__ is Letter:
             objs = self.letters
         
+        duplicate = False 
+        #FIXME! object replacement
         for old_obj in objs:
             if old_obj.coord == obj.coord:
-                objs.remove(old_obj)
-        objs.append(obj)
+                duplicate = True
+                #objs.remove(old_obj)
+        if not duplicate:
+            objs.append(obj)
         
     def get_objects(self, coord):
         return [obj for obj in self.map_objects if obj.coord == coord]
     
     def get_bfoperator(self, coord):
-        print len(self.bfoperators)
         return self.__get_unique_obj_by_coord(self.bfoperators, coord)
     
     def get_robot(self, coord):
@@ -352,7 +352,6 @@ class Map(object):
     @staticmethod
     def __get_unique_obj_by_coord(l, coord):
         results = [obj for obj in l if obj.coord == coord]
-        print len(l), len(results)
         if len(results)==0:
             return None
         elif len(results)==1:

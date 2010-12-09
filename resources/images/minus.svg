@@ -7,13 +7,14 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="200"
-   height="200"
+   width="64"
+   height="64"
    id="svg2"
    sodipodi:version="0.32"
-   inkscape:version="0.46"
+   inkscape:version="0.48.0 r9654"
    sodipodi:docname="minus.svg"
-   inkscape:output_extension="org.inkscape.output.svg.inkscape">
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   version="1.1">
   <metadata
      id="metadata11">
     <rdf:RDF>
@@ -53,9 +54,11 @@
      inkscape:cy="100"
      inkscape:window-x="-4"
      inkscape:window-y="-4"
-     inkscape:current-layer="svg2" />
+     inkscape:current-layer="svg2"
+     inkscape:window-maximized="0" />
   <path
-     d="M 0,75 L 0,125 L 200,125 L 200,75 L 0,75 z"
+     d="M 7,23 7,43 61,43 61,23 7,23 z"
      id="rect4"
-     sodipodi:nodetypes="ccccc" />
+     sodipodi:nodetypes="ccccc"
+     inkscape:connector-curvature="0" />
 </svg>

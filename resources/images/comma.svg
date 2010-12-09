@@ -1,21 +1,21 @@
-﻿<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
+
 <svg
    xmlns:dc="http://purl.org/dc/elements/1.1/"
-   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:cc="http://creativecommons.org/ns#"
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="400"
-   height="400"
+   width="64"
+   height="64"
    id="svg4611"
    sodipodi:version="0.32"
-   inkscape:version="0.44"
+   inkscape:version="0.48.0 r9654"
    version="1.0"
-   sodipodi:docbase="C:\Documents and Settings\HP_Owner\Desktop\hard\My Documents\New Folder"
-   sodipodi:docname="greek lc alpha.svg">
+   sodipodi:docname="comma.svg">
   <defs
      id="defs4613" />
   <sodipodi:namedview
@@ -28,21 +28,23 @@
      objecttolerance="1.6"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.7"
-     inkscape:cx="415.90919"
-     inkscape:cy="190.61883"
+     inkscape:zoom="1.4"
+     inkscape:cx="256.47676"
+     inkscape:cy="109.51102"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      inkscape:object-bbox="true"
      inkscape:object-points="true"
      inkscape:object-nodes="true"
      inkscape:grid-points="true"
-     inkscape:window-width="853"
+     inkscape:window-width="863"
      inkscape:window-height="573"
      inkscape:window-x="271"
      inkscape:window-y="82"
      width="400px"
-     height="400px" />
+     height="400px"
+     showgrid="false"
+     inkscape:window-maximized="0" />
   <metadata
      id="metadata4616">
     <rdf:RDF>
@@ -58,17 +60,18 @@
      inkscape:label="Layer 1"
      inkscape:groupmode="layer"
      id="layer1"
-     transform="translate(-256.6798,-531.7963)">
+     transform="translate(-256.6798,-867.7963)">
     <text
        xml:space="preserve"
-       style="font-size:400px;font-style:normal;font-weight:normal;text-align:start;text-anchor:start;fill:black;fill-opacity:1;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;font-family:Times New Roman"
-       x="450.96552"
-       y="840.36768"
-       id="text5540"><tspan
+       style="font-size:172.02357483px;font-style:normal;font-weight:normal;text-align:start;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Times New Roman"
+       x="262.95239"
+       y="983.86566"
+       id="text5540"
+       transform="scale(1.0982017,0.91057954)"><tspan
          sodipodi:role="line"
          id="tspan5542"
-         x="450.96552"
-         y="840.36768"
+         x="262.95239"
+         y="983.86566"
          style="text-align:center;text-anchor:middle">,</tspan></text>
   </g>
 </svg>

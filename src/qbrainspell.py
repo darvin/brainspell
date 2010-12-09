@@ -21,10 +21,6 @@ PLAYER_COLORS = [
     QColor(12,66,12),
 ]
 
-def create_colored_image(filename, qcolor):
-    return QImage(filename)
-    f = open(filename)
-
 
 class NewGameDialog(QDialog):
     def __init__(self, parent=None):
@@ -69,6 +65,7 @@ class PieceSizedQGraphicsSvgItem(QGraphicsSvgItem):
             super(PieceSizedQGraphicsSvgItem, self).__init__(QLatin1String(filename), parent=parent)
         else:
             super(PieceSizedQGraphicsSvgItem, self).__init__(parent=parent)
+        self.__last_direction = 0
     def paint(self, painter, option, widget):
         self.renderer().render(painter, self.boundingRect())
     def boundingRect(self):
@@ -86,12 +83,25 @@ class PieceSizedQGraphicsSvgItem(QGraphicsSvgItem):
     def move_to(self, coord):
         self.timer = QTimeLine(300)
         self.timer.setFrameRange(0, 100)
-        self.cursor_animation = QGraphicsItemAnimation()
-        self.cursor_animation.setItem(self)
-        self.cursor_animation.setTimeLine(self.timer)
+        self.animation = QGraphicsItemAnimation()
+        self.animation.setItem(self)
+        self.animation.setTimeLine(self.timer)
             
-        self.cursor_animation.setPosAt(1, self.coords_to_qpointf(coord))
+        self.animation.setPosAt(1, self.coords_to_qpointf(coord))
         self.timer.start()
+    
+    def rotate_to(self, direction):
+        self.setTransformOriginPoint(self.scene().piece_size/2.0, self.scene().piece_size/2.0)
+        self.__animation_r = animation =  QPropertyAnimation(self, "rotation")
+        animation.setDuration(300);
+        animation.setStartValue(self.__last_direction);
+        animation.setEndValue(direction.angle())
+
+        animation.start()
+        
+        self.__last_direction = direction.angle()
+            
+
  
 class OperatorItem(PieceSizedQGraphicsSvgItem):
     def __init__(self, coords, operator_actions, parent=None):
@@ -163,12 +173,15 @@ class RobotItem(PieceSizedQGraphicsSvgItem):
         super(RobotItem, self).__init__(parent=parent)
         self.setSharedRenderer(robot.player.robot_svg)
         self.robot = robot
+        self.__last_direction = self.robot.direction.angle()
     
     def tick(self, first=False):
         if first:
             self.setPos(self.coords_to_qpointf(self.robot.coord))
         else:
+            self.rotate_to(self.robot.direction)
             self.move_to(self.robot.coord)
+            
               
 class PlaygroundScene(QGraphicsScene):
     piece_size = 30.0

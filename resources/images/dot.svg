@@ -29,9 +29,9 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="18.849993"
-     inkscape:cx="10.000016"
-     inkscape:cy="10.97774"
+     inkscape:zoom="4.7124983"
+     inkscape:cx="-12.145825"
+     inkscape:cy="20.044427"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      inkscape:window-width="1024"
@@ -66,7 +66,7 @@
        sodipodi:cy="413.45276"
        sodipodi:rx="11.10364"
        sodipodi:ry="11.10364"
-       d="m 216.37093,413.45276 c 0,6.13237 -4.97127,11.10364 -11.10364,11.10364 -6.13237,0 -11.10364,-4.97127 -11.10364,-11.10364 0,-6.13237 4.97127,-11.10364 11.10364,-11.10364 6.13237,0 11.10364,4.97127 11.10364,11.10364 z"
-       transform="matrix(0.749922,0,0,0.749922,17.37824,90.03428)" />
+       d="m 216.37093,413.45276 a 11.10364,11.10364 0 1 1 -22.20728,0 11.10364,11.10364 0 1 1 22.20728,0 z"
+       transform="matrix(1.451719,0,0,1.432608,-105.45756,-215.14191)" />
   </g>
 </svg>

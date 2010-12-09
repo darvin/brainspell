@@ -15,6 +15,7 @@ class WrongDirectionName(Exception):
     pass
                 
 class Direction(object):
+    #directions = ['n', 'w', 's', 'e']
     directions = ['n', 'w', 's', 'e']
     def __init__(self, dir_str):
         if dir_str not in self.directions:
@@ -48,6 +49,8 @@ class Direction(object):
         
     def copy(self):
         return Direction(self.directions[self.__dir])
+    def angle(self):
+        return 360.0 - self.__dir*90
 
 
 

@@ -46,7 +46,8 @@ class Direction(object):
     def __unicode__(self):
         return u"Dir: '%s'" % self.directions[self.__dir]
         
-    
+    def copy(self):
+        return Direction(self.directions[self.__dir])
 
 
 
@@ -71,22 +72,18 @@ class Coords(object):
         (self.x, self.y) = (self.__offset_dir[direction](self.x, self.y, offset))
     def __unicode__(self):
         return u"Coords: %d,%d" % (self.x, self.y)
+    
+    def copy(self):
+        return Coords(self.x, self.y)
          
 
 
 
 class MapObject(object):
     def __init__(self, world, coord):
-        self.__coord = coord
+        self.coord = coord.copy()
         self.world = world
         self.world.add_object(self)
-        
-    coord = property(lambda self: self.__coord)
-    
-        
-        
-        
-        
         
     def tick(self):
         pass
@@ -154,6 +151,9 @@ class Memory(object):
     def current(self):
         return  self.__memory[self.__pointer] 
     
+    def input(self, data):
+        self.__memory[self.__pointer] = data 
+    
     def get_memory(self):
         res = [el for el in self.__memory]
         return (res, self.__pointer)
@@ -194,7 +194,7 @@ class Robot(MapObject):
         super(Robot, self).__init__(world, coords)
         self.player = player
         self.player.robots.append(self)
-        self.direction = direction
+        self.direction = direction.copy()
         self.memory = Memory()
 
         self.__operators_func = { 
@@ -205,6 +205,7 @@ class Robot(MapObject):
             ">": lambda op: self.memory.inc_ptr(),
             "<": lambda op: self.memory.dec_ptr(),
             ".": lambda op: self.putchar(),
+            ",": lambda op: self.getchar(),
             "[": lambda op: self.begin_cycle(op),
             "]": lambda op: self.end_cycle(op),
         }
@@ -216,6 +217,16 @@ class Robot(MapObject):
     def putchar(self):
         self.output += numerology.int_to_alpha(self.memory.current())
 
+    def getchar(self):
+        letter = self.world.get_letter(self.coord)
+        if letter is not None:
+            l = letter.letter
+            self.memory.input(numerology.alpha_to_int(l))
+        else:
+            self.memory.input(0)
+            
+        
+        
     def begin_cycle(self, operator):
         if self.memory.current()==0:
             cur_operator = operator

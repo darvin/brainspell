@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
+  <file>trap.svg</file>
   <file>cursor.svg</file>
   <file>robot.svg</file>
   <file>clockwise.svg</file>
@@ -12,6 +13,33 @@
   <file>minus.svg</file>
   <file>plus.svg</file>
   <file>rightbracket.svg</file>
+<file>robots/alien.svg</file>
+<file>robots/angel.svg</file>
+<file>robots/basic_guy.svg</file>
+<file>robots/billy.svg</file>
+<file>robots/borg.svg</file>
+<file>robots/bricky.svg</file>
+<file>robots/camouflage.svg</file>
+<file>robots/candy.svg</file>
+<file>robots/chef.svg</file>
+<file>robots/cowboy.svg</file>
+<file>robots/dandy.svg</file>
+<file>robots/devil.svg</file>
+<file>robots/fox.svg</file>
+<file>robots/geek.svg</file>
+<file>robots/geisha.svg</file>
+<file>robots/girl.svg</file>
+<file>robots/grey.svg</file>
+<file>robots/ninja.svg</file>
+<file>robots/nurse.svg</file>
+<file>robots/pirate.svg</file>
+<file>robots/policeman.svg</file>
+<file>robots/princess.svg</file>
+<file>robots/punker.svg</file>
+<file>robots/santa.svg</file>
+<file>robots/squared.svg</file>
+<file>robots/stripey.svg</file>
+<file>robots/sunglasser.svg</file>
 
 </qresource>
 </RCC>

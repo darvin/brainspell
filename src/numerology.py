@@ -1,6 +1,8 @@
 #-*- coding:cp1251 -*-
 from string import ascii_uppercase
 
+MAX_NUMBER = 26
+MIN_NUMBER = 0
 
 class WrongCharError(Exception):
     pass
@@ -21,7 +23,7 @@ def int_to_alpha(num):
     
     if num==0:
         return ' '
-    elif 0<num<=26:
+    elif MIN_NUMBER<num<=MAX_NUMBER:
         return ascii_uppercase[num-1]
     else:
         raise WrongIntegerError

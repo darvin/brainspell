@@ -9,17 +9,35 @@ from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from PyQt4.QtSvg import *
 import brainspell
+import numerology
 import images_rc
 from utils import odict
 
 PLAYER_COLORS = [
-    QColor(12,66,12),
-    QColor(120,61,12),
-    QColor(110,12,34),
-    QColor(12,66,12),
-    QColor(12,66,12),
-    QColor(12,66,12),
+    (QColor(12,66,12), "devil",),
+    (QColor(120,61,12), "angel",),
+    (QColor(110,12,34), "cyborg",),
+    (QColor(12,66,12), "geisha",),
+    (QColor(12,66,12), "wall",),
+    (QColor(12,66,12), "pirate",),
 ]
+
+
+
+def layout_clear(layout):
+    while True:
+            child = layout.takeAt(0)
+            if child is not None:
+                w = child.widget()
+                if child.layout() is not None:
+                    layout_clear(child.layout())
+                if w is not None:
+                    w.hide()
+                del w
+                del child
+            else:
+                break
+        
 
 
 class NewGameDialog(QDialog):
@@ -45,13 +63,39 @@ class NewGameDialog(QDialog):
         formlayout.addRow(buttonbox)
 
         
-class DemonName(QLabel):
+class NumerologyLabel(QWidget):
+    def __init__(self, text="", parent=None, game=None):
+        super(NumerologyLabel, self).__init__(parent=parent)
+        
+        self.hlayout = QHBoxLayout()
+        self.setLayout(self.hlayout)
+        self.setText(text)
+    def setText(self, text):
+        layout_clear(self.hlayout) 
+        for c in text:
+            letter = QLabel(c)
+            number = QLabel("%d"%numerology.alpha_to_int(c))
+            layout = QVBoxLayout()
+            layout.addWidget(letter)
+            layout.addWidget(number)
+            self.layout().addLayout(layout)
+        
+
+    
+        
+class DemonName(QWidget):
     def __init__(self, parent=None, game=None):
         super(DemonName, self).__init__(parent=parent)
         self.game=game
-     
+        self.demon_name = NumerologyLabel()
+        alphabet = NumerologyLabel([numerology.int_to_alpha(i) for i in range(numerology.MIN_NUMBER, numerology.MAX_NUMBER)])
+        vlayout = QVBoxLayout()
+        vlayout.addWidget(alphabet)
+        vlayout.addWidget(self.demon_name)
+        self.setLayout(vlayout)
+            
     def set_name(self, name):
-        self.setText(u"Current demon: "+name)
+        self.demon_name.setText(name)
         
     def tick(self):
         pass
@@ -179,6 +223,8 @@ class RobotItem(PieceSizedQGraphicsSvgItem):
             self.rotate_to(self.robot.direction)
             self.move_to(self.robot.coord)
             
+    #def rotate_to(self, direction)
+            
               
 class PlaygroundScene(QGraphicsScene):
     piece_size = 50.0
@@ -208,9 +254,12 @@ class PlaygroundScene(QGraphicsScene):
         
 
         
-    def current_coord_change(self, coord):
-        self.cursor_item.move_to(coord)
-        self.game.current_coord = brainspell.Coords(coord.x, coord.y)
+    def current_coord_change(self, coord = None):
+        if coord is not None:
+            self.game.current_coord = coord.copy()
+        self.cursor_item.move_to(self.game.current_coord)
+    def current_dir_change(self):
+        self.cursor_item.rotate_to(self.game.current_dir)
         
     def update_piece(self, coord):
         for piece in self.pieces:
@@ -250,17 +299,31 @@ class Playground(QGraphicsView):
             self.show()
     def add_robot(self, robot):
         self.scene.add_robot(robot)
- 
+
+class SvgRobotWidget(QSvgWidget):
+    __size = 70
+    def sizeHint(self):
+        return QSize(self.__size,self.__size)
 class RobotWidget(QWidget):
     def __init__(self, robot, parent=None):
         super(RobotWidget, self).__init__(parent)
         self.robot = robot
+        
         layout = QVBoxLayout()
-        self.setLayout(layout)
         self.memory = QLabel()
+        self.output = NumerologyLabel()
         self.debug = QLabel()
         layout.addWidget(self.memory)
         layout.addWidget(self.debug)
+        layout.addWidget(self.output)
+        
+        robot_picture = SvgRobotWidget(":/robots/"+PLAYER_COLORS[robot.player.color_number][1]+".svg")
+        
+        robot_picture.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        hlayout = QHBoxLayout()
+        hlayout.addWidget(robot_picture)
+        hlayout.addLayout(layout)
+        self.setLayout(hlayout)
         
     def redraw_game(self):
         pass
@@ -276,6 +339,11 @@ class RobotWidget(QWidget):
                 
             
         self.memory.setText(m_st)
+        if not self.robot.trapped:
+            r_out = "<b>%s</b>" % self.robot.output
+        else:
+            r_out = self.robot.output + " Trapped!"
+        self.output.setText(self.robot.output)
         
         self.debug.setText(self.robot.coord.__unicode__()+" "+\
                            self.robot.direction.__unicode__())
@@ -375,20 +443,9 @@ class SideDock(QDockWidget):
     
     def redraw_game(self):
         self.players = []
-       
+        layout_clear(self.vblayout)
         #fixme!
-        while True:
-            child = self.vblayout.takeAt(0)
-            if child is not None:
-                w = child.widget()
-                if w is not None:
-                    w.hide()
-                del w
-                del child
-            else:
-                break
-        
-        
+                
         for player in self.game.players:
             player_w = PlayerWidget(player)
             self.players.append(player_w)
@@ -434,17 +491,24 @@ class MainForm(QMainWindow):
         })
         
         self.__operators = odict.from_tuple((
-           ( ">", (u"Next register", "greaterthan", None)),
-           ( "<", (u"Previous register", "lessthan", None)),
-           ( "+", (u"Increase", "plus", None)),
-           ( "-", (u"Decrease", "minus", None)),
-           ( "[", (u"Begin cycle", "leftbracket", None)),
-           ( "]", (u"End cycle", "rightbracket", None)),
-           ( ".", (u"Output current register", "dot", None)),
-           ( ",", (u"Input to current register", "comma", None)),
-           ( "/", (u"Rotate robot clockwise", "clockwise", None)),
-           ( "\\", (u"Rotate robot anticlockwise", "anticlockwise", None)),
+           ( ">", (u"Next register", "greaterthan", None, Qt.Key_Greater)),
+           ( "<", (u"Previous register", "lessthan", None, Qt.Key_Less)),
+           ( "+", (u"Increase", "plus", None, Qt.Key_Plus)),
+           ( "-", (u"Decrease", "minus", None, Qt.Key_Minus)),
+           ( "[", (u"Begin cycle", "leftbracket", None, Qt.Key_BracketLeft)),
+           ( "]", (u"End cycle", "rightbracket", None, Qt.Key_BracketRight)),
+           ( ".", (u"Output current register", "dot", None, Qt.Key_O)),
+           ( ",", (u"Input to current register", "comma", None, Qt.Key_I)),
+           ( "/", (u"Rotate robot clockwise", "clockwise", None, Qt.Key_Slash)),
+           ( "\\", (u"Rotate robot anticlockwise", "anticlockwise", None, Qt.Key_Backslash)),
         ))
+        
+        self.__directions = {
+            "n": (u"North", Qt.Key_Up),
+            "e": (u"East", Qt.Key_Right),
+            "w": (u"West", Qt.Key_Left),
+            "s": (u"South", Qt.Key_Down),
+        }
 
         super(MainForm, self).__init__()
         self.resize(800,600)
@@ -473,6 +537,16 @@ class MainForm(QMainWindow):
         operators_menu = menubar.addMenu(u"&Operators")
         casts_menu = menubar.addMenu(u"&Casts")
         help_menu = menubar.addMenu(u"&Help")
+        
+        self.move_actions = {}
+        for d, (name, key) in self.__directions.items():
+            direction = brainspell.Direction(d)
+            act = self.move_actions[direction] = QAction(name, self)
+            act.setShortcut(QKeySequence(key))
+            act.triggered.connect(functools.partial(self.move_current_coord, direction))
+            self.addAction(act)
+            
+            
  
         self.cast_actions = odict()
         for cast, (casttitle, func) in self.__casts.items():
@@ -486,9 +560,9 @@ class MainForm(QMainWindow):
             
          
         self.operator_actions = odict()
-        for operator, (optitle, opiconname, func) in self.__operators.items():
+        for operator, (optitle, opiconname, func, key) in self.__operators.items():
             oa = QAction(QIcon(":/"+opiconname+".svg"),optitle, self)
-               
+            oa.key = key
             oa.svg_renderer = QSvgRenderer(":/"+opiconname+".svg")
             if func is None:
                 oa.triggered.connect(functools.partial(self.place_operator, operator))
@@ -553,29 +627,42 @@ r".++/",\
         self.game = brainspell.Game(gamemap, gametype)
         for i in range(players_num):
             pl = brainspell.Player(u"Player #%d"%i, self.game)
-            pl.qcolor = PLAYER_COLORS[i]
+            pl.qcolor = PLAYER_COLORS[i][0]
         self.game.current_player = self.game.players[0]
         self.game.current_coord = brainspell.Coords(0,0)
         self.game.current_dir = brainspell.Direction('e')
         
         for i, player in enumerate(self.game.players):
+            player.color_number = i
             player.operator_svgs = {}
-            player.robot_svg = QSvgRenderer(":/robot.svg")# PLAYER_COLORS[i])
+            player.robot_svg = QSvgRenderer(":/robots/"+PLAYER_COLORS[i][1]+".svg")
+            player.robot_svg
 
-            for operator, (optitle, opiconname, func) in self.__operators.items():
+            for operator, (optitle, opiconname, func, key) in self.__operators.items():
                 #FIXME!!!
                 qi = QSvgRenderer(":/"+opiconname+".svg")# PLAYER_COLORS[i])
                 player.operator_svgs[operator] = qi
-       
+    
+                
     def place_operator(self, operator):
         self.game.current_player.place_operator(operator, self.game.current_coord)
         self.playground.update_piece(self.game.current_coord)
-        #self.move_current_coord(self.game.current_dir)
+        newdir = self.game.current_dir.copy()
+        if operator=="/":
+            newdir.turn_right()
+            self.move_current_coord(newdir)
+        elif operator=="\\":
+            newdir.turn_left()
+            self.move_current_coord(newdir)
+        self.move_current_coord(newdir)
     
     def move_current_coord(self, direction):
-        oldcoord = brainspell.Coords(self.game.current_coord.x , self.game.current_coord.y)
-        self.game.current_coord.move(direction)
-        self.playground.scene.current_coord_change(oldcoord, self.game.current_coord)
+        if self.game.current_dir==direction:
+            self.game.current_coord.move(direction)
+            self.playground.scene.current_coord_change()
+        else:
+            self.game.current_dir = direction.copy()
+            self.playground.scene.current_dir_change()
         
     def cast(self, cast):
         self.game.current_player.cast(cast)
@@ -635,6 +722,11 @@ r".++/",\
     def create_robot(self):
         r = self.game.current_player.cast("create_robot", self.game.current_coord, self.game.current_dir)
         self.playground.add_robot(r)
+        
+    def keyPressEvent(self, e):
+        for act in self.operator_actions.values():
+            if act.key == e.key():
+                act.trigger()
     
    
 if __name__=="__main__":

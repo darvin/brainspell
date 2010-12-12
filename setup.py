@@ -56,7 +56,7 @@ cmds = {
 
 
 base_options = dict (name=u'brainspell',
-      version="1.0",
+      version="0.1",
       description='BrainSpell is brainfuck game',
       author='Sergey Klimov',
       author_email='dcdarv@gmail.com',

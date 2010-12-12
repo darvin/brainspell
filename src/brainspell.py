@@ -205,15 +205,25 @@ class Player(object):
         return self.__casts
     def outputs(self):
         return [robot.output for robot in self.robots]
+    
+    def get_correct_indexes(self):
+        outputs = [o for o in self.outputs() if o in self.game.demon_name]
+        indexes = []
+        for o in outputs:
+            start = self.game.demon_name.find(o)
+            indexes += range(start, start + len(o))
+        return indexes
+        
+        
             
 
 class Memory(object):
     """
     Memory of robot object
     """
-    def __init__(self):
+    def __init__(self, size=8):
         self.__pointer = 0
-        self.__memory = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.__memory = [0]*size
 
     def inc(self):
         """

@@ -71,6 +71,7 @@ class NumerologyLabel(QWidget):
         self.setLayout(self.hlayout)
         self.setText(text)
     def setText(self, text):
+        
         layout_clear(self.hlayout) 
         for c in text:
             letter = QLabel(c)
@@ -79,11 +80,14 @@ class NumerologyLabel(QWidget):
             layout.addWidget(letter)
             layout.addWidget(number)
             self.layout().addLayout(layout)
+            
         
     def highlight_letter(self, index):
         c = self.layout().itemAt(index)
-        l = c.layout()
-        l.itemAt(0).widget().setText(l.itemAt(0).widget().text()+"!")
+        if c is not None:
+            l = c.layout()
+            w = l.itemAt(0).widget()
+            w.setStyleSheet("color: green")
 
     
         
@@ -97,12 +101,14 @@ class DemonName(QWidget):
         vlayout.addWidget(alphabet)
         vlayout.addWidget(self.demon_name)
         self.setLayout(vlayout)
+        
             
     def set_name(self, name):
         self.demon_name.setText(name)
         
     def tick(self):
-        pass
+        for index in self.game.current_player.get_correct_indexes():
+            self.demon_name.highlight_letter(index)
     
         
 
@@ -150,7 +156,6 @@ class PieceSizedQGraphicsSvgItem(QGraphicsSvgItem):
         else:
             angle = 360*(self.__last_direction/360) + direction.angle()
             
-        print angle
         animation.setEndValue(angle)
 
         animation.start()
@@ -573,7 +578,6 @@ class MainForm(QMainWindow):
                 ca.triggered.connect(func)
             self.cast_actions[cast] = ca
             casts_menu.addAction(ca)
-            
          
         self.operator_actions = odict()
         for operator, (optitle, opiconname, func, key) in self.__operators.items():
@@ -586,8 +590,6 @@ class MainForm(QMainWindow):
                 oa.triggered.connect(func)
             self.operator_actions[operator] = oa
             operators_menu.addAction(oa)
-            
-
         
         file_menu.addAction(new_game_action)
         file_menu.addAction(play_pause_action)
@@ -740,7 +742,14 @@ r".++/",\
         self.playground.add_robot(r)
     
     def player_win(self, player):
-        print player
+        mb = QMessageBox(self)
+        mb.setText(u"Player %s wins!"%player.name)
+        export = mb.addButton(u"Export game map", QMessageBox.ActionRole)
+        new_game = mb.addButton(u"Start new game", QMessageBox.DestructiveRole)
+        new_game.clicked.connect(self.new_game)
+        export.clicked.connect(lambda: self.export() and self.new_game())
+        mb.setDefaultButton(new_game)
+        mb.exec_()
         
     def keyPressEvent(self, e):
         for act in self.operator_actions.values():

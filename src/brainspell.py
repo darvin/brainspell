@@ -64,7 +64,12 @@ class Direction(object):
         """
         return Direction(self.directions[self.__dir])
     def angle(self):
-        return (self.__dir-3)*90
+        return {
+            'n': -90,
+            'e': 0,
+            's': 90,
+            'w': 180,
+        }[self.directions[self.__dir]]
 
 
 
@@ -198,6 +203,9 @@ class Player(object):
         Returns all availably casts and mana cost as dict
         """
         return self.__casts
+    def outputs(self):
+        return [robot.output for robot in self.robots]
+            
 
 class Memory(object):
     """
@@ -570,16 +578,19 @@ class Game(object):
         "middle":(demonname.get_middle_demon,),
         "great":(demonname.get_great_demon,),
         }
-    def __init__(self, gamemap, gametype="middle"):
+    def __init__(self, gamemap, gametype="middle", victory_cb=None):
         """
         @param gamemap: Map instance
         @param gametype: name of game type
+        @param victory_cb: function that calls on victory with player as arg
         """
         self.gamemap = gamemap
         self.players = []
+        self.win_player = None
         
         self.gametype = self.gametypes[gametype]
         self.demon_name = self.gametype[0]().upper()
+        self.victory_cb = victory_cb
 
     def add_player(self, player):
         """
@@ -588,15 +599,29 @@ class Game(object):
         """
         self.players.append(player)
         player.game = self
+   
+    def __victory(self, list_of_outputs):
+        result = ""
+        for o in list_of_outputs:
+            if o in self.demon_name:
+                result += o
+        return result==self.demon_name
+            
     
     def tick(self):
         for player in self.players:
             player.tick()
+            if self.__victory(player.outputs()):
+                self.win_player = player
+                if self.victory_cb is not None:
+                    self.victory_cb(player)
         self.gamemap.tick()
         
         for robot in self.gamemap.robots:
             if robot.output!="" and robot.output not in self.demon_name:
                 robot.trapped = True
+        
+        
 
 
 if __name__=="__main__":

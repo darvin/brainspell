@@ -80,6 +80,10 @@ class NumerologyLabel(QWidget):
             layout.addWidget(number)
             self.layout().addLayout(layout)
         
+    def highlight_letter(self, index):
+        c = self.layout().itemAt(index)
+        l = c.layout()
+        l.itemAt(0).widget().setText(l.itemAt(0).widget().text()+"!")
 
     
         
@@ -99,6 +103,8 @@ class DemonName(QWidget):
         
     def tick(self):
         pass
+    
+        
 
     def redraw_game(self):
         self.set_name(self.game.demon_name)
@@ -131,16 +137,25 @@ class PieceSizedQGraphicsSvgItem(QGraphicsSvgItem):
         animation.setEndValue(self.coords_to_qpointf(coord))
 
         animation.start()
+        
     def rotate_to(self, direction):
         self.setTransformOriginPoint(self.scene().piece_size/2.0, self.scene().piece_size/2.0)
         self.__animation_r = animation =  QPropertyAnimation(self, "rotation")
         animation.setDuration(300);
-        animation.setStartValue(self.__last_direction);
-        animation.setEndValue(direction.angle())
+        
+        
+        if abs(self.__last_direction%360-direction.angle())==270:
+            angle = 360*(self.__last_direction/360+1)+direction.angle()
+        
+        else:
+            angle = 360*(self.__last_direction/360) + direction.angle()
+            
+        print angle
+        animation.setEndValue(angle)
 
         animation.start()
         
-        self.__last_direction = direction.angle()
+        self.__last_direction = angle
             
 
  
@@ -304,6 +319,8 @@ class SvgRobotWidget(QSvgWidget):
     __size = 70
     def sizeHint(self):
         return QSize(self.__size,self.__size)
+    
+
 class RobotWidget(QWidget):
     def __init__(self, robot, parent=None):
         super(RobotWidget, self).__init__(parent)
@@ -333,20 +350,19 @@ class RobotWidget(QWidget):
         m_st = ""
         for elem, i in zip(m, range(len(m))):
             if i==p:
-                m_st += "<b>%d</b>"%elem
+                m_st += "<b>%d</b> "%elem
             else:
-                m_st += "%d"%elem
+                m_st += "%d "%elem
                 
             
         self.memory.setText(m_st)
-        if not self.robot.trapped:
-            r_out = "<b>%s</b>" % self.robot.output
-        else:
-            r_out = self.robot.output + " Trapped!"
         self.output.setText(self.robot.output)
+        if not self.robot.trapped:
+            for i in range(len(self.robot.output)):
+                self.output.highlight_letter(i)
         
         self.debug.setText(self.robot.coord.__unicode__()+" "+\
-                           self.robot.direction.__unicode__())
+                           self.robot.direction.__unicode__() + " "+unicode (self.robot.trapped))
 
 
            
@@ -624,7 +640,7 @@ r".++/",\
         self.play_pause(True)
             
     def create_game(self, gamemap, players_num, gametype):
-        self.game = brainspell.Game(gamemap, gametype)
+        self.game = brainspell.Game(gamemap, gametype, self.player_win)
         for i in range(players_num):
             pl = brainspell.Player(u"Player #%d"%i, self.game)
             pl.qcolor = PLAYER_COLORS[i][0]
@@ -722,16 +738,23 @@ r".++/",\
     def create_robot(self):
         r = self.game.current_player.cast("create_robot", self.game.current_coord, self.game.current_dir)
         self.playground.add_robot(r)
+    
+    def player_win(self, player):
+        print player
         
     def keyPressEvent(self, e):
         for act in self.operator_actions.values():
             if act.key == e.key():
                 act.trigger()
     
-   
-if __name__=="__main__":
+
+def main():
     app = QApplication(sys.argv)
     w = MainForm()
     w.show()
 
     sys.exit(app.exec_())
+                
+if __name__=="__main__":
+    main()
+   

@@ -13,6 +13,10 @@ import numerology
 import images_rc
 from utils import odict
 
+
+GRID_COLOR = QColor(111,111,111)
+GRID_SIZE = 30.0
+
 PLAYER_COLORS = [
     (QColor(12,66,12), "devil",),
     (QColor(120,61,12), "angel",),
@@ -53,9 +57,12 @@ class NewGameDialog(QDialog):
         self.size_y.setValue(20)
         self.players = QSpinBox()
         self.players.setValue(1)
+        self.letter_prob = QSpinBox()
+        self.letter_prob.setValue(20)
         formlayout.addRow(u"Size X:", self.size_x)
         formlayout.addRow(u"Size Y:", self.size_y)
         formlayout.addRow(u"Number of players:", self.players)
+        formlayout.addRow(u"Probability of letters:", self.letter_prob)
         
         buttonbox = QDialogButtonBox(QDialogButtonBox.Ok| QDialogButtonBox.Cancel)
         buttonbox.rejected.connect(self.reject)
@@ -247,7 +254,7 @@ class RobotItem(PieceSizedQGraphicsSvgItem):
             
               
 class PlaygroundScene(QGraphicsScene):
-    piece_size = 50.0
+    piece_size = GRID_SIZE
     def __init__(self, operator_actions, parent=None, game=None):
         super(PlaygroundScene, self).__init__(parent=parent)
         self.game = game
@@ -255,9 +262,9 @@ class PlaygroundScene(QGraphicsScene):
         self.pieces = []
         
         for i in range(self.game.gamemap.size_x+1):
-            self.addLine(i*self.piece_size, 0, i*self.piece_size, self.piece_size*self.game.gamemap.size_y)
+            self.addLine(i*self.piece_size, 0, i*self.piece_size, self.piece_size*self.game.gamemap.size_y, QPen(GRID_COLOR))
         for i in range(self.game.gamemap.size_y+1):
-            self.addLine(0, i*self.piece_size, self.piece_size*self.game.gamemap.size_x, i*self.piece_size)
+            self.addLine(0, i*self.piece_size, self.piece_size*self.game.gamemap.size_x, i*self.piece_size, QPen(GRID_COLOR))
         
         for x in range(self.game.gamemap.size_x):
             for y in range(self.game.gamemap.size_y):
@@ -624,7 +631,7 @@ class MainForm(QMainWindow):
         d = NewGameDialog(self)
         d.exec_()
         if d.result()==QDialog.Accepted:
-            self.create_game(brainspell.Map(d.size_x.value(), d.size_y.value()), d.players.value(), "middle")
+            self.create_game(brainspell.Map(d.size_x.value(), d.size_y.value(), d.letter_prob.value()), d.players.value(), "middle")
             
             self.redraw_game()
             
@@ -676,8 +683,10 @@ r".++/",\
     
     def move_current_coord(self, direction):
         if self.game.current_dir==direction:
-            self.game.current_coord.move(direction)
-            self.playground.scene.current_coord_change()
+            if self.game.current_coord.get_offset(direction).is_valid(\
+                  self.game.gamemap):
+                self.game.current_coord.move(direction)
+                self.playground.scene.current_coord_change()
         else:
             self.game.current_dir = direction.copy()
             self.playground.scene.current_dir_change()

@@ -72,6 +72,8 @@ class Direction(object):
         }[self.directions[self.__dir]]
 
 
+class CoordsInvalidError(Exception):
+    pass
 
 class Coords(object):
     """
@@ -119,6 +121,14 @@ class Coords(object):
         @return: copy of coordinates
         """
         return Coords(self.x, self.y)
+    
+    def is_valid(self, gamemap):
+        """
+        Returns that coordinates are valid in given gamemap
+        @param gamemap: map object
+        @return: are coordinates valid
+        """
+        return (0<=self.x<gamemap.size_x) and (0<=self.y<gamemap.size_y)
          
 
 
@@ -132,6 +142,8 @@ class MapObject(object):
         @param world: GameMap object
         @param coord: Coordinates of map object
         """
+        if not coord.is_valid(world):
+            raise CoordsInvalidError
         self.coord = coord.copy()
         self.world = world
         self.world.add_object(self)
@@ -164,6 +176,7 @@ class Player(object):
         self.max_mana = 200
         self.mana_regeneration = 1
         self.mana = self.max_mana
+        self.robots_running = False
 
     def cast(self, cast, *args):
         """
@@ -173,9 +186,11 @@ class Player(object):
         @return: game objects, results of cast ()
         """
         if cast is 'run':
+            self.robots_running = True
             for robot in self.robots:
                 robot.run()
         if cast is 'stop':
+            self.robots_running = False
             for robot in self.robots:
                 robot.stop()
         if cast is 'create_robot':
@@ -203,6 +218,7 @@ class Player(object):
         Returns all availably casts and mana cost as dict
         """
         return self.__casts
+    
     def outputs(self):
         return [robot.output for robot in self.robots]
     
@@ -349,7 +365,7 @@ class Robot(MapObject):
         }
         self.__cycle_stack = []
         
-        self.__running = False
+        self.__running = self.player.robots_running
         self.output = ""
         self.trapped = False
     
@@ -414,21 +430,29 @@ class Robot(MapObject):
         self.__operators_func[operator.operator](operator)
     
     def step(self, in_cycle=False):
-        self.coord.move(self.direction,1)
-        current_operator = self.world.get_bfoperator(self.coord)
-        if current_operator is not None:
-            if current_operator.operator=="/":
-                self.direction.turn_right()
-            if current_operator.operator=="\\":
-                self.direction.turn_left()
+            self.coord.move(self.direction,1)
+            current_operator = self.world.get_bfoperator(self.coord)
+            if current_operator is not None:
+                if current_operator.operator=="/":
+                    self.direction.turn_right()
+                if current_operator.operator=="\\":
+                    self.direction.turn_left()
+            
+    def trap(self):
+        self.trapped = True
             
         
     def tick(self):
-        if self.__running:
-            self.step()
-            current_operator = self.world.get_bfoperator(self.coord)
-            if current_operator is not None:
-                self.execute(current_operator)
+        if self.__running and not self.trapped:
+            newcoord = self.coord.get_offset(self.direction,1) 
+            if newcoord.is_valid(self.world) and \
+               self.world.get_robot(newcoord) is None:
+                self.step()
+                current_operator = self.world.get_bfoperator(self.coord)
+                if current_operator is not None:
+                    self.execute(current_operator)
+            else:
+                self.trap()
                 
             
             
@@ -443,7 +467,7 @@ class Map(object):
     """
     Game map
     """
-    def __init__(self, size_x, size_y, place_letters = True):
+    def __init__(self, size_x, size_y, letters_prob=20):
         """
         @param size_x: Size by X axe
         @param size_y: Size by Y axe
@@ -455,8 +479,7 @@ class Map(object):
         self.bfoperators = []
         self.letters = []
         
-        if place_letters:
-            self.place_random_letters(20)
+        self.place_random_letters(letters_prob)
     
     def place_random_letters(self, prob):
         """
@@ -477,7 +500,7 @@ class Map(object):
         @param map_as_str_list: string list that contains brainfuck operators
         @return: Map object
         """
-        m = cls(max([len(line) for line in map_as_str_list]),len(map_as_str_list), place_letters = False)
+        m = cls(max([len(line) for line in map_as_str_list]),len(map_as_str_list), letters_prob=0)
         for y in range(len(map_as_str_list)):
             for x in range(len(map_as_str_list[y])):
                 if map_as_str_list[y][x]!=' ':
@@ -629,13 +652,5 @@ class Game(object):
         
         for robot in self.gamemap.robots:
             if robot.output!="" and robot.output not in self.demon_name:
-                robot.trapped = True
+                robot.trap()
         
-        
-
-
-if __name__=="__main__":
-    map = Map(15,4)
-
-    r = map.get_object_by_id('3')
-

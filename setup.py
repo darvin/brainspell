@@ -2,13 +2,14 @@
 """
 """
 import glob
+from setuptools import find_packages
 from distutils.core import setup
 from distutils.core import Command
 from distutils.command.build import build
 import sys
 import os
 
-mainscript = 'src/brainspell.pyw'
+mainscript = 'src/qbrainspell.pyw'
 
 def needsupdate(src, targ):
     return not os.path.exists(targ) or os.path.getmtime(src) > os.path.getmtime(targ)
@@ -62,8 +63,8 @@ base_options = dict (name=u'brainspell',
       author_email='dcdarv@gmail.com',
       scripts=[mainscript],
       url='http://github.com/darvin/brainspell',
+      packages = ['brainspell', 'brainspell.gui'],
       package_dir = {'brainspell': 'src'},
-      packages=['brainspell'],
 
       data_files=[('doc',glob.glob("doc/*.html")),
                   ('doc/images',glob.glob('doc/images/*.png')),

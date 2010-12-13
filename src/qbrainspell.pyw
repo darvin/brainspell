@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import brainspell.qbrainspell
+import brainspell.gui.mainform
 
 if __name__=="__main__":
-    brainspell.qbrainspell.main()
+    brainspell.gui.mainform.main()

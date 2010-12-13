@@ -352,8 +352,8 @@ class Robot(MapObject):
         self.memory = Memory()
 
         self.__operators_func = { 
-            "\\": lambda op: None,
-            r"/": lambda op: None,
+            ")": lambda op: None,
+            "(": lambda op: None,
             "+": lambda op: self.memory.inc(),
             "-": lambda op: self.memory.dec(),
             ">": lambda op: self.memory.inc_ptr(),

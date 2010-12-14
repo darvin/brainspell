@@ -17,5 +17,7 @@ You can use operators of BrainFuck and some additional operators:
  - `\` turns the ghost anticlockwise
 
 When searching for matching `]` operator, the north/east/south/west path is traversed the same way as the IP does.
+
 When searching for matching `[` operator, the north/east/south/west path is traversed the opposite way as the IP does.
+
 Also, each player can cast spells. Spells costs mana, mana restores every second.

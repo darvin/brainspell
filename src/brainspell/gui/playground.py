@@ -107,6 +107,8 @@ class PlaygroundPiece(QGraphicsItem):
     
     def mousePressEvent(self, ev):
         self.scene().current_coord_change(self.coord)
+        ev.ignore()
+        
 
 
 class CursorItem(PieceSizedQGraphicsSvgItem):
@@ -220,9 +222,11 @@ class PlaygroundScene(QGraphicsScene):
 class Playground(QGraphicsView):
     def __init__(self, operator_actions, parent=None, game=None):
         super(Playground, self).__init__(parent=parent)
+        self.setDragMode(QGraphicsView.ScrollHandDrag)
         self.operator_actions = operator_actions
         self.game = game
         self.redraw_game()
+        self.__numScheduledScalings = 0
         
     def update_piece(self, coord):
         self.scene.update_piece(coord)
@@ -237,3 +241,26 @@ class Playground(QGraphicsView):
             self.show()
     def add_robot(self, robot):
         self.scene.add_robot(robot)
+        
+    def wheelEvent(self, event):
+        numDegrees = event.delta() / 8.0
+        numSteps = numDegrees / 15.0
+        self.__numScheduledScalings += numSteps;
+        if (self.__numScheduledScalings * numSteps < 0):
+            self.__numScheduledScalings = numSteps;
+        anim = self.__scale_anim = QTimeLine(350, self)
+        anim.setUpdateInterval(20)
+ 
+        anim.valueChanged.connect(self.scalingTime)
+        anim.finished.connect(self.animFinished)
+        anim.start()
+        
+    def scalingTime(self, x):
+        factor = 1.0 + (self.__numScheduledScalings / 300.0)
+        self.scale(factor, factor)
+    
+    def animFinished(self):
+        if (self.__numScheduledScalings > 0):
+            self.__numScheduledScalings -= 1
+        else:
+            self.__numScheduledScalings += 1

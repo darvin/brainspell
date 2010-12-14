@@ -130,9 +130,12 @@ class RobotItem(PieceSizedQGraphicsSvgItem):
         if first:
             self.setPos(self.coords_to_qpointf(self.robot.coord))
         else:
-            self.rotate_to(self.robot.direction)
-            self.move_to(self.robot.coord)
+            if self.robot.is_running() and not self.robot.trapped:
+                self.rotate_to(self.robot.direction)
+                self.move_to(self.robot.coord)
+                self.scene().play_sound("robot_walk")
         if self.robot.trapped and not self.__was_trapped:
+            self.scene().play_sound("robot_trap")
             self.__was_trapped = True
             
             self.__animation_trap = animation =  QPropertyAnimation(self, "scale")
@@ -166,11 +169,11 @@ class RobotItem(PieceSizedQGraphicsSvgItem):
 
 
 class PlaygroundScene(QGraphicsScene):
-    def __init__(self, operator_actions, parent=None, game=None, piece_size=30, grid_color=QColor(130,130,130)):
+    def __init__(self, operator_actions, play_sound_func, parent=None, game=None, piece_size=30, grid_color=QColor(130,130,130)):
         super(PlaygroundScene, self).__init__(parent=parent)
         self.piece_size=piece_size
         self.game = game
-        self.operator_actions = operator_actions
+        self.operator_actions, self.play_sound = operator_actions, play_sound_func
         self.pieces = []
         
         for i in range(self.game.gamemap.size_x+1):
@@ -220,10 +223,10 @@ class PlaygroundScene(QGraphicsScene):
 
 
 class Playground(QGraphicsView):
-    def __init__(self, operator_actions, parent=None, game=None):
+    def __init__(self, operator_actions, play_sound_func, parent=None, game=None):
         super(Playground, self).__init__(parent=parent)
         self.setDragMode(QGraphicsView.ScrollHandDrag)
-        self.operator_actions = operator_actions
+        self.operator_actions, self.play_sound_func = operator_actions, play_sound_func
         self.game = game
         self.redraw_game()
         self.__numScheduledScalings = 0
@@ -236,7 +239,7 @@ class Playground(QGraphicsView):
     
     def redraw_game(self):
         if self.game is not None:
-            self.scene = PlaygroundScene(parent=self, game=self.game, operator_actions=self.operator_actions, piece_size = settings.GRID_SIZE, grid_color=settings.GRID_COLOR)
+            self.scene = PlaygroundScene(parent=self, game=self.game, operator_actions=self.operator_actions, piece_size = settings.GRID_SIZE, grid_color=settings.GRID_COLOR, play_sound_func=self.play_sound_func)
             self.setScene(self.scene) 
             self.show()
     def add_robot(self, robot):

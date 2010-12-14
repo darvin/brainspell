@@ -459,7 +459,8 @@ class Robot(MapObject):
             else:
                 self.trap()
                 
-            
+    def is_running(self):
+        return self.__running
             
 
 

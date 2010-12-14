@@ -100,7 +100,7 @@ class RobotWidget(QWidget):
         self.output = NumerologyLabel()
         self.debug = QLabel()
         layout.addWidget(self.memory)
-        layout.addWidget(self.debug)
+        #layout.addWidget(self.debug)
         layout.addWidget(self.output)
         
         robot_picture = SvgRobotWidget(":/robots/"+PLAYER_COLORS[robot.player.color_number][1]+".svg")

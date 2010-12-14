@@ -2,19 +2,24 @@
 #-*- coding: utf-8 -*-
 
 import sys
+import os
 import functools
+import random
 
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from PyQt4.QtSvg import *
+try:
+    from PyQt4.phonon import Phonon
+except ImportError:
+    pass
 
 import brainspell
+from brainspell.gui import resfile, MUSIC_LIST, SOUNDS
 import images_rc
 from brainspell.utils import odict
 from widgets import *
 from playground import *
-
-
 
 class NewGameDialog(QDialog):
     def __init__(self, parent=None):
@@ -94,7 +99,7 @@ class MainForm(QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu(u"&Game")
-        view_menu = menubar.addMenu(u"&View")
+        self.view_menu = view_menu = menubar.addMenu(u"&View")
         operators_menu = menubar.addMenu(u"&Operators")
         casts_menu = menubar.addMenu(u"&Casts")
         help_menu = menubar.addMenu(u"&Help")
@@ -148,7 +153,7 @@ class MainForm(QMainWindow):
         self.addDockWidget(Qt.RightDockWidgetArea, self.demon_name)
         demon_name_action = self.demon_name.toggleViewAction()
         
-        self.playground = Playground(operator_actions = self.operator_actions)
+        self.playground = Playground(operator_actions = self.operator_actions, play_sound_func=self.play_sound)
         self.sidebar = SideDock(self.cast_actions, self.operator_actions, self)
         self.sidebar.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.sidebar)
@@ -175,8 +180,76 @@ class MainForm(QMainWindow):
         self.demo()
 
         settings = QSettings()
-        self.restoreGeometry(settings.value("geometry").toByteArray());
-        self.restoreState(settings.value("windowState").toByteArray());
+        self.restoreGeometry(settings.value("geometry").toByteArray())
+        self.restoreState(settings.value("windowState").toByteArray())
+        
+        try:
+            self.init_music()
+        except NameError:
+            pass
+        
+    def init_music(self):
+        self.m_media = Phonon.MediaObject(self)
+        self.m_output = audioOutput = Phonon.AudioOutput(Phonon.MusicCategory, self)
+        Phonon.createPath(self.m_media, audioOutput)
+        self.song_playlist = None
+        self.m_media.aboutToFinish.connect(self.play_next_song)
+        self.play_next_song()
+        self.play_pause_music_action = play_pause_music_action = QAction(u"Music", self)
+        play_pause_music_action.setCheckable(True)
+        play_pause_music_action.toggled.connect(self.play_pause_music)
+        self.view_menu.addAction(play_pause_music_action)
+        play_pause_music_action.setChecked(True)
+        
+        self.s_media = Phonon.MediaObject(self)
+        self.s_output = audioOutput = Phonon.AudioOutput(Phonon.GameCategory, self)
+        Phonon.createPath(self.s_media, audioOutput)
+        self.__sound_sources = {}
+        for soundname, soundfile in SOUNDS.items():
+            self.__sound_sources[soundname] = Phonon.MediaSource(\
+                resfile('audio/sound/'+ soundfile))
+
+        self.sound_action = sound_action = QAction(u"Sound", self)
+        sound_action.setCheckable(True)
+        sound_action.toggled.connect(self.mute)
+        self.__last_s_volume = self.s_output.volume()
+        sound_action.setChecked(True)
+        self.view_menu.addAction(sound_action)
+    
+    def mute(self, notmuted):
+        if notmuted:
+            self.s_output.setVolume(self.__last_s_volume)
+        else:
+            self.__last_s_volume = self.s_output.volume()
+        self.s_output.setMuted(not notmuted)
+        
+        
+    def play_sound(self, soundname):
+        self.s_media.setCurrentSource(self.__sound_sources[soundname])
+        self.s_media.play()
+            
+
+        
+    def play_pause_music(self, toggled):
+        if toggled:
+            self.m_media.play()
+        else:
+            self.m_media.pause()
+        
+        
+    def play_next_song(self):
+        self.m_media.enqueue(Phonon.MediaSource(self.get_random_song()))
+        self.m_media.play()
+   
+    def get_random_song(self):
+        if self.song_playlist is None:
+            m_dir = resfile('audio/music')
+            song_playlist = [os.path.join(m_dir,f) for f in os.listdir(m_dir)]
+            random.shuffle(song_playlist)
+            self.song_playlist = iter(song_playlist)
+        return self.song_playlist.next()
+            
+                
     
     def new_game(self):
         d = NewGameDialog(self)
@@ -300,6 +373,7 @@ r".++(",\
     def create_robot(self):
         r = self.game.current_player.cast("create_robot", self.game.current_coord, self.game.current_dir)
         self.playground.add_robot(r)
+        self.play_sound("robot_create")
     
     def player_win(self, player):
         mb = QMessageBox(self)

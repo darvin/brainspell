@@ -38,7 +38,7 @@ class BSBuildUi(Command):
             raise distutils.errors.DistutilsExecError, 'Unable to compile resouce file %s' % str(e)
             return
     def run(self):
-        self.compile_qrc( 'resources/images/images.qrc', 'src/gui/images_rc.py' )
+        self.compile_qrc( 'resources/images/images.qrc', 'src/brainspell/gui/images_rc.py' )
 #        self.compile_qrc( 'resources/translations/translations.qrc', 'src/translation_rc.py' )
 
 
@@ -57,7 +57,7 @@ cmds = {
 
 
 base_options = dict (name=u'brainspell',
-      version="0.7",
+      version="0.9",
       description='BrainSpell is brainfuck game',
       author='Sergey Klimov',
       author_email='dcdarv@gmail.com',
@@ -65,10 +65,13 @@ base_options = dict (name=u'brainspell',
       url='http://github.com/darvin/brainspell',
       packages = find_packages('src'),
       package_dir = {'': 'src'},
+      data_files=[
+          ('images', glob.glob('resources/images/*.svg')),
+          ('images/robots', glob.glob('resources/images/robots/*.svg')),
+          ('audio/music', glob.glob('resources/audio/music/*.ogg')),
+          ('audio/sound', glob.glob('resources/audio/sound/*.ogg')),
+      ],
 
-      data_files=[('doc',glob.glob("doc/*.html")),
-                  ('doc/images',glob.glob('doc/images/*.png')),
-  ],
       long_description="""BrainSpell game""",
       license="GPL",
       maintainer="Sergey Klimov",
@@ -85,7 +88,7 @@ base_options = dict (name=u'brainspell',
      )
 
 
-
+print ('audio/sound', glob.glob('resources/audio/sound/*')),
 
 extra_options = {}
 base_options.update(extra_options)

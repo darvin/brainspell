@@ -38,7 +38,7 @@ class BSBuildUi(Command):
             raise distutils.errors.DistutilsExecError, 'Unable to compile resouce file %s' % str(e)
             return
     def run(self):
-        self.compile_qrc( 'resources/images/images.qrc', 'src/images_rc.py' )
+        self.compile_qrc( 'resources/images/images.qrc', 'src/gui/images_rc.py' )
 #        self.compile_qrc( 'resources/translations/translations.qrc', 'src/translation_rc.py' )
 
 
@@ -57,14 +57,14 @@ cmds = {
 
 
 base_options = dict (name=u'brainspell',
-      version="0.1",
+      version="0.7",
       description='BrainSpell is brainfuck game',
       author='Sergey Klimov',
       author_email='dcdarv@gmail.com',
       scripts=[mainscript],
       url='http://github.com/darvin/brainspell',
-      packages = ['brainspell', 'brainspell.gui'],
-      package_dir = {'brainspell': 'src'},
+      packages = find_packages('src'),
+      package_dir = {'': 'src'},
 
       data_files=[('doc',glob.glob("doc/*.html")),
                   ('doc/images',glob.glob('doc/images/*.png')),

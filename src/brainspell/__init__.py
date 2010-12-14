@@ -574,7 +574,9 @@ class Map(object):
         """
         return self.__get_unique_obj_by_coord(self.bfoperators, coord)
     def del_bfoperator(self, coord):
-        self.__list_by_class(BFOperator).remove(self.__get_unique_obj_by_coord(self.bfoperators, coord))
+        op = self.__get_unique_obj_by_coord(self.bfoperators, coord)
+        if op is not None:
+            self.__list_by_class(BFOperator).remove(op)
         
     def get_robot(self, coord):
         """

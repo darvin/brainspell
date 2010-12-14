@@ -10,7 +10,7 @@ from PyQt4.QtSvg import *
 
 import brainspell
 import images_rc
-from utils import odict
+from brainspell.utils import odict
 from widgets import *
 from playground import *
 
@@ -104,7 +104,7 @@ class MainForm(QMainWindow):
             direction = brainspell.Direction(d)
             act = self.move_actions[direction] = QAction(name, self)
             act.setShortcut(QKeySequence(key))
-            act.triggered.connect(functools.partial(self.move_current_coord, direction))
+            act.triggered.connect(functools.partial(self.move_current_coord, direction, 1))
             self.addAction(act)
             
             
@@ -166,9 +166,11 @@ class MainForm(QMainWindow):
         layout.addWidget(self.playground)
         
         toolbar = self.addToolBar("main")
+        toolbar.setObjectName('main_toolbar')
         toolbar.addAction(new_game_action)
         toolbar.addAction(play_pause_action)
         toolbar.addAction(step_action)
+        
                
         self.demo()
 
@@ -230,11 +232,11 @@ r".++(",\
             self.move_current_coord(newdir)
         self.move_current_coord(newdir)
     
-    def move_current_coord(self, direction):
-        if self.game.current_dir==direction:
-            if self.game.current_coord.get_offset(direction).is_valid(\
+    def move_current_coord(self, direction, step=1):
+        if (direction is None) or (self.game.current_dir==direction):
+            if self.game.current_coord.get_offset(self.game.current_dir, step).is_valid(\
                   self.game.gamemap):
-                self.game.current_coord.move(direction)
+                self.game.current_coord.move(self.game.current_dir, step)
                 self.playground.scene.current_coord_change()
         else:
             self.game.current_dir = direction.copy()
@@ -321,6 +323,16 @@ r".++(",\
         
         if e.key() in (Qt.Key_Backspace, Qt.Key_Delete):
             self.delete_current_operator()
+        if e.key() == Qt.Key_Backspace:
+            self.move_current_coord(None, -1)
+            op = self.game.gamemap.get_bfoperator(self.game.current_coord)
+            if op is not None:
+                if op.operator == '(':
+                    self.game.current_dir.turn_left()
+                    self.playground.scene.current_dir_change()
+                if op.operator == ')':
+                    self.game.current_dir.turn_right()
+                    self.playground.scene.current_dir_change()
  
     def closeEvent(self, event):
         settings = QSettings()

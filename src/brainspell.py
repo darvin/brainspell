@@ -207,7 +207,10 @@ class Player(object):
         @param coords: coordinators
         @return: operator object
         """
-        return BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
+        if operator is not None:
+            return BFOperator(world=self.game.gamemap, coords=coords, player=self, op_text=operator)
+        else:
+            self.game.gamemap.del_bfoperator(coords)
 
     def tick(self):
         if self.mana < self.max_mana:
@@ -294,7 +297,7 @@ class BFOperator(MapObject):
     Operator of BrainFuck dialect on game map
     """
 
-    valid_operators = "/\\,.<>+-[] "
+    valid_operators = "(),.<>+-[] "
     
     def __init__(self, world, coords, player, op_text):
         """
@@ -395,7 +398,7 @@ class Robot(MapObject):
                 self.step()
                 cur_operator = self.world.get_bfoperator(self.coord)
         else:
-            self.__cycle_stack.append((operator, self.direction))
+            self.__cycle_stack.append((operator, self.direction.copy()))
 
             
         
@@ -403,7 +406,7 @@ class Robot(MapObject):
         if self.memory.current()!=0:
             last, lastdir = self.__cycle_stack.pop()
             self.coord = Coords(last.coord.x, last.coord.y)
-            self.direction = lastdir
+            self.direction = lastdir.copy()
             self.begin_cycle(self.world.get_bfoperator(self.coord))
         else:
             self.__cycle_stack.pop()
@@ -433,9 +436,9 @@ class Robot(MapObject):
             self.coord.move(self.direction,1)
             current_operator = self.world.get_bfoperator(self.coord)
             if current_operator is not None:
-                if current_operator.operator=="/":
+                if current_operator.operator=="(":
                     self.direction.turn_right()
-                if current_operator.operator=="\\":
+                if current_operator.operator==")":
                     self.direction.turn_left()
             
     def trap(self):
@@ -444,13 +447,15 @@ class Robot(MapObject):
         
     def tick(self):
         if self.__running and not self.trapped:
-            newcoord = self.coord.get_offset(self.direction,1) 
+            current_operator = self.world.get_bfoperator(self.coord)
+            if current_operator is not None:
+                self.execute(current_operator)
+
+            newcoord = self.coord.get_offset(self.direction,1)
+            
             if newcoord.is_valid(self.world) and \
                self.world.get_robot(newcoord) is None:
                 self.step()
-                current_operator = self.world.get_bfoperator(self.coord)
-                if current_operator is not None:
-                    self.execute(current_operator)
             else:
                 self.trap()
                 
@@ -528,25 +533,30 @@ class Map(object):
                 
         return l
         
+    def __list_by_class(self, cls):
+        if cls is BFOperator:
+            objs = self.bfoperators
+        if cls is Robot:
+            objs = self.robots
+        if cls is Letter:
+            objs = self.letters
+        return objs
+        
+    
     def add_object(self, obj):
         """
         Adds object to map
         @param obj: object to add
         """
         self.map_objects.append(obj)
-        if obj.__class__ is BFOperator:
-            objs = self.bfoperators
-        if obj.__class__ is Robot:
-            objs = self.robots
-        if obj.__class__ is Letter:
-            objs = self.letters
-        
+        objs = self.__list_by_class(obj.__class__)
         duplicate = False 
         for old_obj in objs:
             if old_obj.coord == obj.coord:
                 duplicate = True
                 objs.remove(old_obj)
         objs.append(obj)
+    
         
     def get_objects(self, coord):
         """
@@ -563,7 +573,9 @@ class Map(object):
         @return: game object
         """
         return self.__get_unique_obj_by_coord(self.bfoperators, coord)
-    
+    def del_bfoperator(self, coord):
+        self.__list_by_class(BFOperator).remove(self.__get_unique_obj_by_coord(self.bfoperators, coord))
+        
     def get_robot(self, coord):
         """
         Returns one Robot object in specified coordinates
@@ -600,18 +612,18 @@ class Map(object):
         for obj in self.map_objects:
             obj.tick()
         
-import demonname
+import demonology
 class Game(object):
     """
     Game
     """
     gametypes = {
-        "demo":(demonname.get_small_demon,),
-        "small":(demonname.get_small_demon,),
-        "middle":(demonname.get_middle_demon,),
-        "great":(demonname.get_great_demon,),
+        "demo":(lambda: "",),
+        "small":(demonology.get_small_demon,),
+        "middle":(demonology.get_middle_demon,),
+        "great":(demonology.get_great_demon,),
         }
-    def __init__(self, gamemap, gametype="middle", victory_cb=None):
+    def __init__(self, gamemap, gametype="demo", victory_cb=None):
         """
         @param gamemap: Map instance
         @param gametype: name of game type
@@ -651,6 +663,7 @@ class Game(object):
         self.gamemap.tick()
         
         for robot in self.gamemap.robots:
-            if robot.output!="" and robot.output not in self.demon_name:
-                robot.trap()
+            if not (self.demon_name == "" or self.demon_name is None):
+                if robot.output!="" and (robot.output not in self.demon_name):
+                    robot.trap()
         

@@ -2,45 +2,18 @@
 #-*- coding: utf-8 -*-
 
 import sys
-import copy
 import functools
-import PyQt4
+
 from PyQt4.QtGui import *
 from PyQt4.QtCore import *
 from PyQt4.QtSvg import *
+
 import brainspell
-import numerology
 import images_rc
 from utils import odict
+from widgets import *
+from playground import *
 
-
-GRID_COLOR = QColor(111,111,111)
-GRID_SIZE = 30.0
-
-PLAYER_COLORS = [
-    (QColor(12,66,12), "devil",),
-    (QColor(120,61,12), "angel",),
-    (QColor(110,12,34), "cyborg",),
-    (QColor(12,66,12), "geisha",),
-    (QColor(12,66,12), "wall",),
-    (QColor(12,66,12), "pirate",),
-]
-
-
-
-def layout_clear(layout):
-    while True:
-            child = layout.takeAt(0)
-            if child is not None:
-                w = child.widget()
-                if child.layout() is not None:
-                    layout_clear(child.layout())
-                if w is not None:
-                    w.hide()
-                del w
-                del child
-            else:
-                break
 
 
 class NewGameDialog(QDialog):
@@ -78,16 +51,16 @@ class MainForm(QMainWindow):
         })
         
         self.__operators = odict.from_tuple((
-           ( ">", (u"Next register", "greaterthan", None, Qt.Key_Greater)),
-           ( "<", (u"Previous register", "lessthan", None, Qt.Key_Less)),
-           ( "+", (u"Increase", "plus", None, Qt.Key_Plus)),
-           ( "-", (u"Decrease", "minus", None, Qt.Key_Minus)),
-           ( "[", (u"Begin cycle", "leftbracket", None, Qt.Key_BracketLeft)),
-           ( "]", (u"End cycle", "rightbracket", None, Qt.Key_BracketRight)),
-           ( ".", (u"Output current register", "dot", None, Qt.Key_O)),
-           ( ",", (u"Input to current register", "comma", None, Qt.Key_I)),
-           ( "(", (u"Rotate robot clockwise", "clockwise", None, Qt.Key_Slash)),
-           ( ")", (u"Rotate robot anticlockwise", "anticlockwise", None, Qt.Key_)),
+           ( ">", (u"Next register", "greaterthan", None, (Qt.Key_Greater, Qt.Key_Period) )),
+           ( "<", (u"Previous register", "lessthan", None, (Qt.Key_Less, Qt.Key_Comma) )),
+           ( "+", (u"Increase", "plus", None, (Qt.Key_Plus,Qt.Key_Equal) )),
+           ( "-", (u"Decrease", "minus", None, (Qt.Key_Minus,Qt.Key_Underscore) )),
+           ( "[", (u"Begin cycle", "leftbracket", None, (Qt.Key_BracketLeft,) )),
+           ( "]", (u"End cycle", "rightbracket", None, (Qt.Key_BracketRight,) )),
+           ( ".", (u"Output current register", "dot", None, (Qt.Key_O,) )),
+           ( ",", (u"Input to current register", "comma", None, (Qt.Key_I,) )),
+           ( "(", (u"Rotate robot clockwise", "clockwise", None, (Qt.Key_9, Qt.Key_ParenLeft) )),
+           ( ")", (u"Rotate robot anticlockwise", "anticlockwise", None, (Qt.Key_0, Qt.Key_ParenLeft) )),
         ))
         
         self.__directions = {
@@ -121,6 +94,7 @@ class MainForm(QMainWindow):
 
         menubar = self.menuBar()
         file_menu = menubar.addMenu(u"&Game")
+        view_menu = menubar.addMenu(u"&View")
         operators_menu = menubar.addMenu(u"&Operators")
         casts_menu = menubar.addMenu(u"&Casts")
         help_menu = menubar.addMenu(u"&Help")
@@ -168,28 +142,39 @@ class MainForm(QMainWindow):
         widg = QWidget()
         widg.setLayout(layout)
         self.setCentralWidget(widg)
+        
         self.demon_name = DemonNameDock(self)
         self.demon_name.setAllowedAreas(Qt.TopDockWidgetArea)
-        self.addDockWidget(Qt.TopDockWidgetArea, self.demon_name)
-        self.alphabet = AlphabetDock(self)
-        self.alphabet.setAllowedAreas(Qt.TopDockWidgetArea)
-        self.addDockWidget(Qt.TopDockWidgetArea, self.alphabet)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.demon_name)
+        demon_name_action = self.demon_name.toggleViewAction()
+        
         self.playground = Playground(operator_actions = self.operator_actions)
-        self.sidebar = SideDock(u"Information", self.cast_actions, self.operator_actions, self)
+        self.sidebar = SideDock(self.cast_actions, self.operator_actions, self)
         self.sidebar.setAllowedAreas(Qt.RightDockWidgetArea)
         self.addDockWidget(Qt.RightDockWidgetArea, self.sidebar)
         sidebar_action = self.sidebar.toggleViewAction()
         
-        layout.addWidget(self.demon_name)
+        self.alphabet = AlphabetDock(self)
+        self.alphabet.setAllowedAreas(Qt.TopDockWidgetArea)
+        self.addDockWidget(Qt.TopDockWidgetArea, self.alphabet)
+        alphabet_action = self.alphabet.toggleViewAction()
+        
+        view_menu.addAction(sidebar_action)
+        view_menu.addAction(demon_name_action)
+        view_menu.addAction(alphabet_action)
+        
         layout.addWidget(self.playground)
         
         toolbar = self.addToolBar("main")
         toolbar.addAction(new_game_action)
-        toolbar.addAction(sidebar_action)
         toolbar.addAction(play_pause_action)
         toolbar.addAction(step_action)
                
         self.demo()
+
+        settings = QSettings()
+        self.restoreGeometry(settings.value("geometry").toByteArray());
+        self.restoreState(settings.value("windowState").toByteArray());
     
     def new_game(self):
         d = NewGameDialog(self)
@@ -201,10 +186,10 @@ class MainForm(QMainWindow):
             
     def demo(self):
         demo_map = [\
-r"+++/",\
+r"+++(",\
 r"   +",\
 r"   +",\
-r".++/",\
+r".++(",\
                    ]
         gamemap = brainspell.Map.from_list(demo_map)
         self.create_game(gamemap, 1, "great")
@@ -237,10 +222,10 @@ r".++/",\
         self.game.current_player.place_operator(operator, self.game.current_coord)
         self.playground.update_piece(self.game.current_coord)
         newdir = self.game.current_dir.copy()
-        if operator=="/":
+        if operator=="(":
             newdir.turn_right()
             self.move_current_coord(newdir)
-        elif operator=="\\":
+        elif operator==")":
             newdir.turn_left()
             self.move_current_coord(newdir)
         self.move_current_coord(newdir)
@@ -324,14 +309,33 @@ r".++/",\
         mb.setDefaultButton(new_game)
         mb.exec_()
         
+        
+    def delete_current_operator(self):
+        self.game.current_player.place_operator(None, self.game.current_coord)
+        self.playground.update_piece(self.game.current_coord)
+        
     def keyPressEvent(self, e):
         for act in self.operator_actions.values():
-            if act.key == e.key():
+            if e.key() in act.key:
                 act.trigger()
-    
+        
+        if e.key() in (Qt.Key_Backspace, Qt.Key_Delete):
+            self.delete_current_operator()
+ 
+    def closeEvent(self, event):
+        settings = QSettings()
+        settings.setValue("geometry", self.saveGeometry())
+        settings.setValue("windowState", self.saveState())
+
+        super(MainForm,self).closeEvent(event)
+
+   
 
 def main():
     app = QApplication(sys.argv)
+    app.setApplicationName("qBrainSpell")
+    app.setOrganizationName("SergeyKlimov")
+    app.setOrganizationDomain("darvin.github.com")
     w = MainForm()
     w.show()
 

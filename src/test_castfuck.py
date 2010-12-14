@@ -62,7 +62,7 @@ class TestGame(unittest.TestCase):
         
         self.assertEqual(pl.game, game)
         
-        pl.cast("create_robot", Coords(-1,0), Direction('e'))
+        pl.cast("create_robot", Coords(0,0), Direction('e'))
        
         program = "+.+.+.+.+"
         for op, x in zip(program, range(len(program))):
@@ -77,7 +77,7 @@ class TestGame(unittest.TestCase):
         for op, x in zip(program, range(len(program))):
             pl.place_operator(op, Coords(x,0))
             
-        pl.cast("create_robot", Coords(-1,0), Direction('e'))
+        pl.cast("create_robot", Coords(0,0), Direction('e'))
        
         pl.cast("run")
         
@@ -92,7 +92,7 @@ class TestGame(unittest.TestCase):
         
         self.assertEqual(pl.game, game)
         
-        pl.cast("create_robot", Coords(-1,0), Direction('e'))
+        pl.cast("create_robot", Coords(0,0), Direction('e'))
        
         program = "+.+.+.+.+"
         for op, x in zip(program, range(len(program))):
@@ -117,15 +117,15 @@ class TestGame(unittest.TestCase):
         
     def test_many_programms(self):
         programms = (
-            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
-            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
-            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
-            (["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            #(["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            #(["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            #(["++++++++.>+++++.<++++..++++-."], "HELLO"),
+            #(["++++++++.>+++++.<++++..++++-."], "HELLO"),
                 ([\
-"+++/",\
-"   +",\
-"   +",\
-".++/",\
+" +++(",\
+"    +",\
+"    +",\
+" .++(",\
 "",\
 ], "G"),
 
@@ -135,17 +135,12 @@ class TestGame(unittest.TestCase):
             game = Game(Map(60,60))
             pl = Player("darvin",game)
             
-            pl.cast("create_robot", Coords(-1,0), Direction('e'))
+            pl.cast("create_robot", Coords(0,0), Direction('e'))
             self.place_operators(pl, program, 0,0)
             
             pl.cast("run") 
             for i in range(100):
                 game.tick()
-            pl.robots[0].coord = Coords(0,2)
-            game.tick()
-            game.tick()
-            game.tick()
-            game.tick()
             self.assertEqual(rightresult, pl.robots[0].output)
                 
     
@@ -156,11 +151,11 @@ class TestGame(unittest.TestCase):
             #(["++[>+++[>+++<-]<-]>>."], "R"),
             #(["++[>++[>+++++<-]<-]>>+."], "U"),
             ([
-r"++[/  />+++++/     ",                
+r"++[(  (>+++++(     ",                
 r"   >  [      <     ",                
-r"   \++\      -     ",                
+r"   )++)      -     ",                
 r"             ]     ",                
-r"      .+>>]-</     ",                
+r"      .+>>]-<(     ",                
 r"                   ",                
 r"                   ",                
 r"                   ",                
@@ -176,7 +171,7 @@ r"                   ",
             game = Game(Map(60,60))
             pl = Player("darvin",game)
             
-            pl.cast("create_robot", Coords(-1,0), Direction('e'))
+            pl.cast("create_robot", Coords(0,0), Direction('e'))
             self.place_operators(pl, program, 0,0)
             
             pl.cast("run") 
@@ -191,10 +186,10 @@ r"                   ",
             (["++++++++.>+++++.<++++..++++-."], "HELLO"),
             (["++++++++.>+++++.<++++..++++-."], "HELLO"),
                 ([\
-"+++/",\
+"+++(",\
 "   +",\
 "   +",\
-".++/",\
+".++(",\
 "",\
 ], "G"),
 
@@ -205,7 +200,7 @@ r"                   ",
             game = Game(mapp)
             pl = Player("darvin", game)
             
-            pl.cast("create_robot", Coords(-1,0), Direction('e'))
+            pl.cast("create_robot", Coords(0,0), Direction('e'))
             
             pl.cast("run") 
             for i in range(100):

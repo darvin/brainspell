@@ -1,5 +1,19 @@
 Brain Spell is the game about sorcerers' competition. Each player is a sorcerer which tries to summon a demon. To summon a demon, you need to spell its name, by printing it, using roboghosts.
 
+# Installation #
+
+## Archlinux ##
+
+There is [package in AUR](http://aur.archlinux.org/packages.php?ID=44418)
+
+## Other systems ##
+
+ - `git clone git://github.com/darvin/brainspell.git`
+ - `cd brainspell`
+ - `python setup.py install`
+
+# Usage #
+
 Ghosts are execution pointers of [BrainFuck](http://en.wikipedia.org/wiki/Brainfuck) dialect programming language. Used dialect look similiar [Brainloller](http://esoteric.voxelperfect.net/wiki/Brainloller) - 2d dialect of Brainfuck.
 
 

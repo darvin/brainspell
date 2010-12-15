@@ -1,0 +1,8 @@
+[Desktop Entry]
+Name=BrainSpell game
+Type=Application
+Comment=BrainF*ck-powered logical game
+Exec=qbrainspell
+Icon=brainspell
+Categories=Games;
+GenericName=BrainSpell game

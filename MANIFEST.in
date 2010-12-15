@@ -1,0 +1,2 @@
+include gwibber.desktop.in gwibber.desktop
+include MANIFEST.in MANIFEST

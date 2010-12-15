@@ -1,2 +1,2 @@
-include gwibber.desktop.in gwibber.desktop
+include brainspell.desktop.in brainspell.desktop
 include MANIFEST.in MANIFEST

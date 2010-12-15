@@ -346,7 +346,7 @@ r".++(",\
             map_list = [line.rstrip() for line in f.readlines()]
             f.close()
             gamemap = brainspell.Map.from_list(map_list)
-            self.create_game(gamemap, 1, "middle")
+            self.create_game(gamemap, 1, "demo")
             self.redraw_game()
             
         

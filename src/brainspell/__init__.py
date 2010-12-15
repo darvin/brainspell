@@ -649,11 +649,14 @@ class Game(object):
         player.game = self
    
     def __victory(self, list_of_outputs):
-        result = ""
-        for o in list_of_outputs:
-            if o in self.demon_name:
-                result += o
-        return result==self.demon_name
+        if self.demon_name!='' and self.demon_name is not None:
+            result = ""
+            for o in list_of_outputs:
+                if o in self.demon_name:
+                    result += o
+            return result==self.demon_name
+        else:
+            return False
             
     
     def tick(self):

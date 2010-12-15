@@ -3,12 +3,12 @@
 pkgname=brainspell-git
 _pkgname=brainspell
 pkgver=20101215
-pkgrel=1
+pkgrel=2
 pkgdesc="logical game for programmers: write on Brainfuck for speed!"
 url="https://github.com/darvin/brainspell"
 license=('GPL')
 arch=('any')
-depends=('python2' 'pyqt' 'phonon')
+depends=('python2' 'pyqt' 'phonon' 'git' 'python2-distribute')
 conflicts=('brainspell')
 replaces=('brainspell')
 provides=('brainspell=0.9')

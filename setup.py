@@ -9,7 +9,7 @@ from distutils.command.build import build
 import sys
 import os
 
-mainscript = 'src/qbrainspell.pyw'
+mainscript = 'src/qbrainspell'
 
 def needsupdate(src, targ):
     return not os.path.exists(targ) or os.path.getmtime(src) > os.path.getmtime(targ)
@@ -55,6 +55,7 @@ cmds = {
         'build_ui' : BSBuildUi,
         }
 
+sf = 'share/brainspell/'
 
 base_options = dict (name=u'brainspell',
       version="0.9",
@@ -66,10 +67,12 @@ base_options = dict (name=u'brainspell',
       packages = find_packages('src'),
       package_dir = {'': 'src'},
       data_files=[
-          ('images', glob.glob('resources/images/*.svg')),
-          ('images/robots', glob.glob('resources/images/robots/*.svg')),
-          ('audio/music', glob.glob('resources/audio/music/*.ogg')),
-          ('audio/sound', glob.glob('resources/audio/sound/*.ogg')),
+          ('share/pixmaps', ['resources/brainspell.svg']),
+          ('share/applications', ['brainspell.desktop']),
+          (sf+'images', glob.glob('resources/images/*.svg')),
+          (sf+'images/robots', glob.glob('resources/images/robots/*.svg')),
+          (sf+'audio/music', glob.glob('resources/audio/music/*.ogg')),
+          (sf+'audio/sound', glob.glob('resources/audio/sound/*.ogg')),
       ],
 
       long_description="""BrainSpell game""",

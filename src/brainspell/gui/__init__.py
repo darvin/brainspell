@@ -17,7 +17,6 @@ def resfile(filename):
     
     for d in dirs:
         if trydir(d,filename) is not None:
-            print trydir(d,filename)
             return trydir(d,filename)
     
 MUSIC_LIST = [

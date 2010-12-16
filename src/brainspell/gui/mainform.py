@@ -260,32 +260,71 @@ class MainForm(QMainWindow):
             self.redraw_game()
             
     def demo(self):
-        demo_map = """
-([(  (++(  (>( ( (((   ((
-+ >  +  <  . + + []>   ++
-+)(  >)-(  >)( + >-)(  ++
->)+( [)]<( >)( + +< )( +.
-.  + +   - ] . > ++  )(.+
-(++) )   ) ) ) ) ))   ))+
-                         
-(--(  (+( )<) ))    ))   
--     ( + (   ++    ><   
-)..(  )+( (.) +>    >>   
-)>>(  +   >   +[    <.   
-   >  +   ]   <+    >+   
-(->.  (   (-< ((+++ ((++(
-""".split('\n')
+        demo_map = """(                         (
+
+ (+(  (-](  (-( ( (((   (( 
+ + +  <  <  . < > +.>   +[ 
+ >)(  +)-(  +)( [ +>)(  +> 
+ [)[( +)]>( <)( + +] )( ++ 
+ .  > +   > . + + <-  )(>+ 
+ (++) )   ) ) ) ) ))   ))+ 
+                          
+ ))))  +++ )-) ))    ))
+ +     ) - (   <.    ->
+ ++++  -++ (-) ++    .]
+    +  .   >   ++    <-
+    +  .   .   +>    <<
+ +(((  (   (++ ((>.+ ((++( 
+ 
+(                         (""".split('\n')
+        demo_robots = (
+            (
+                (3,7,'w'),
+            ),
+            (
+                (5,0,'e'),
+            ),
+            (
+                (16,0,'e'),
+            ),
+            (
+                (0,8,'n'),
+            ),
+            (
+                (26,8,'s'),
+            ),
+            (
+                (5,16,'w'),
+            ),
+            (
+                (16,16,'w'),
+            ),
+        )
+        
         gamemap = brainspell.Map.from_list(demo_map)
-        self.create_game(gamemap, 1, "demo")
-        r = self.game.players[0].cast('create_robot',brainspell.Coords(2,6), brainspell.Direction('w'))
-        
+        self.create_game(gamemap, len(demo_robots), "demo")
         self.redraw_game()
-        self.play_pause(True)
-        self.playground.add_robot(r)
+        for player_num, player_robots_list in enumerate(demo_robots):
+            for x, y, direction in player_robots_list: 
+                r = self.game.players[player_num].cast('create_robot',brainspell.Coords(x,y), brainspell.Direction(direction))
         
-        self.game.players[0].cast('run')
+                self.playground.add_robot(r)
+            self.game.players[player_num].cast('run')
+        self.play_pause(True)
+        
         
     def create_game(self, gamemap, players_num, gametype):
+        def create_fancy_operator_svg_renderer(filename, color):
+            f = QFile(filename)
+            f.open(QIODevice.ReadOnly or QIODevice.Text) 
+            st = f.readAll()
+            pl_color = unicode(QVariant(color).toString())
+            st.replace('#000000', pl_color)
+            st.replace('black', pl_color)
+            
+            svgr = QSvgRenderer(st)
+            return svgr
+        
         self.game = brainspell.Game(gamemap, gametype, self.player_win)
         for i in range(players_num):
             pl = brainspell.Player(u"Player #%d"%i, self.game)
@@ -302,7 +341,7 @@ class MainForm(QMainWindow):
 
             for operator, (optitle, opiconname, func, key) in self.__operators.items():
                 #FIXME!!!
-                qi = QSvgRenderer(":/"+opiconname+".svg")# PLAYER_COLORS[i])
+                qi = create_fancy_operator_svg_renderer(":/"+opiconname+".svg", PLAYER_COLORS[i][0])
                 player.operator_svgs[operator] = qi
     
                 

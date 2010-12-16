@@ -57,8 +57,9 @@
      inkscape:current-layer="svg2"
      inkscape:window-maximized="0" />
   <path
-     d="M 7,23 7,43 61,43 61,23 7,23 z"
+     d="M 5,23 5,43 59,43 59,23 5,23 z"
      id="rect4"
      sodipodi:nodetypes="ccccc"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     style="fill:#000000" />
 </svg>

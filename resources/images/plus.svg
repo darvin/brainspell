@@ -59,5 +59,6 @@
   <path
      d="m 25.375,5 0,21.375 -21.375,0 0,14.25 21.375,0 0,21.375 14.25,0 0,-21.375 21.375,0 0,-14.25 -21.375,0 0,-21.375 -14.25,0 z"
      id="rect4"
-     inkscape:connector-curvature="0" />
+     inkscape:connector-curvature="0"
+     style="fill:#000000" />
 </svg>

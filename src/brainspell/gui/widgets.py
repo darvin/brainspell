@@ -215,10 +215,22 @@ class SideDock(QDockWidget):
         self.setObjectName('side_dock')
         self.game = game
         self.cast_actions, self.operator_actions = cast_actions, operator_actions
+       
+        mainwidget = QWidget()
+        
+        self.mainlayout = QVBoxLayout()
+        mainwidget.setLayout(self.mainlayout)
+        
         w = QWidget()
+        
+        sa = QScrollArea()
+        sa.setWidget(w)
+        sa.setWidgetResizable(True)
         self.vblayout = QVBoxLayout()
         w.setLayout(self.vblayout)
-        self.setWidget(w)
+        
+        self.mainlayout.addWidget(sa)
+        self.setWidget(mainwidget)
         self.players = []
     
     def redraw_game(self):
@@ -235,7 +247,7 @@ class SideDock(QDockWidget):
                     QSizePolicy.Minimum, QSizePolicy.Expanding))
         
         self.casts = CastsWidget(parent=self, player=self.game.current_player, cast_actions=self.cast_actions)
-        self.vblayout.addWidget(self.casts)
+        self.mainlayout.addWidget(self.casts)
         
         
         for player in self.players:
@@ -244,7 +256,7 @@ class SideDock(QDockWidget):
         self.casts.redraw_game()
         
         oper_toolbar = QToolBar()
-        self.vblayout.addWidget(oper_toolbar)
+        self.mainlayout.addWidget(oper_toolbar)
         for operator, oa in self.operator_actions.items():
             oper_toolbar.addAction(oa)
             

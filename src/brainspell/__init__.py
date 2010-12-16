@@ -240,7 +240,7 @@ class Memory(object):
     """
     Memory of robot object
     """
-    def __init__(self, size=8):
+    def __init__(self, size=16):
         self.__pointer = 0
         self.__memory = [0]*size
 

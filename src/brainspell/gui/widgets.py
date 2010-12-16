@@ -197,8 +197,9 @@ class CastsWidget(QWidget):
     def redraw_game(self):
         avail_casts = self.player.get_casts()
         for castname, castcost in avail_casts.items():
-            button = QPushButton(self.cast_actions[castname].text())
-            button.clicked.connect(self.cast_actions[castname].triggered)
+            act = self.cast_actions[castname]
+            button = QPushButton(act.icon(), act.text())
+            button.clicked.connect(act.triggered)
             self.casts[castname] = (button, castcost)
             self.layout().addWidget(button)
             

@@ -40,6 +40,9 @@
 <file>robots/squared.svg</file>
 <file>robots/stripey.svg</file>
 <file>robots/sunglasser.svg</file>
+<file>cast_create_robot.svg</file>
+<file>cast_stop.svg</file>
+<file>cast_run.svg</file>
 
 </qresource>
 </RCC>

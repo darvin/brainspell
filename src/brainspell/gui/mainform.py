@@ -91,7 +91,7 @@ class MainForm(QMainWindow):
         export_action = QAction(u"Export", self)
         export_action.triggered.connect(self.export)
 
-        self.play_pause_action = play_pause_action = QAction(u"Play", self)
+        self.play_pause_action = play_pause_action = QAction(self.style().standardIcon(QStyle.SP_MediaPlay), u"Play", self)
         play_pause_action.setCheckable(True)
         play_pause_action.toggled.connect(self.play_pause)
         step_action = QAction(u"Step", self)
@@ -116,7 +116,7 @@ class MainForm(QMainWindow):
  
         self.cast_actions = odict()
         for cast, (casttitle, func) in self.__casts.items():
-            ca = QAction(casttitle, self)
+            ca = QAction(QIcon(':/cast_'+cast+'.svg'), casttitle, self)
             if func is None:
                 ca.triggered.connect(functools.partial(self.cast,cast))
             else:
@@ -260,18 +260,31 @@ class MainForm(QMainWindow):
             self.redraw_game()
             
     def demo(self):
-        demo_map = [\
-r"+++(",\
-r"   +",\
-r"   +",\
-r".++(",\
-                   ]
+        demo_map = """
+([(  (++(  (>( ( (((   ((
++ >  +  <  . + + []>   ++
++)(  >)-(  >)( + >-)(  ++
+>)+( [)]<( >)( + +< )( +.
+.  + +   - ] . > ++  )(.+
+(++) )   ) ) ) ) ))   ))+
+                         
+(--(  (+( )<) ))    ))   
+-     ( + (   ++    ><   
+)..(  )+( (.) +>    >>   
+)>>(  +   >   +[    <.   
+   >  +   ]   <+    >+   
+(->.  (   (-< ((+++ ((++(
+""".split('\n')
         gamemap = brainspell.Map.from_list(demo_map)
-        self.create_game(gamemap, 1, "great")
-       
+        self.create_game(gamemap, 1, "demo")
+        r = self.game.players[0].cast('create_robot',brainspell.Coords(2,6), brainspell.Direction('w'))
+        
         self.redraw_game()
         self.play_pause(True)
-            
+        self.playground.add_robot(r)
+        
+        self.game.players[0].cast('run')
+        
     def create_game(self, gamemap, players_num, gametype):
         self.game = brainspell.Game(gamemap, gametype, self.player_win)
         for i in range(players_num):
@@ -365,7 +378,7 @@ r".++(",\
         self.play_pause_action.setChecked(play)
         if play:
             self.play_pause_action.setText(u"Pause")
-            self.tick_timer.start(1000)
+            self.tick_timer.start(450)
             
         else:
             self.play_pause_action.setText(u"Play")

@@ -35,3 +35,7 @@ When searching for matching `]` operator, the north/east/south/west path is trav
 When searching for matching `[` operator, the north/east/south/west path is traversed the opposite way as the IP does.
 
 Also, each player can cast spells. Spells costs mana, mana restores every second.
+
+# Screenshots #
+
+[Here](https://github.com/darvin/brainspell/tree/master/doc/images)

@@ -58,7 +58,7 @@ cmds = {
 sf = 'share/brainspell/'
 
 base_options = dict (name=u'brainspell',
-      version="0.9",
+      version="1.0",
       description='BrainSpell is brainfuck game',
       author='Sergey Klimov',
       author_email='dcdarv@gmail.com',

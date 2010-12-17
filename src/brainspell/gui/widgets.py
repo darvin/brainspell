@@ -42,6 +42,8 @@ class NumerologyLabel(QWidget):
                 layout.addWidget(letter)
                 layout.addWidget(number)
                 self.layout().addLayout(layout)
+            self.layout().addItem(QSpacerItem(20, 20, \
+                    QSizePolicy.Expanding, QSizePolicy.Minimum))
             
         self.__last_text = text
             
@@ -221,6 +223,13 @@ class SideDock(QDockWidget):
         self.mainlayout = QVBoxLayout()
         mainwidget.setLayout(self.mainlayout)
         
+        self.setWidget(mainwidget)
+        self.players = []
+    
+    def redraw_game(self):
+        self.players = []
+        layout_clear(self.mainlayout)
+       
         w = QWidget()
         
         sa = QScrollArea()
@@ -229,14 +238,8 @@ class SideDock(QDockWidget):
         self.vblayout = QVBoxLayout()
         w.setLayout(self.vblayout)
         
+
         self.mainlayout.addWidget(sa)
-        self.setWidget(mainwidget)
-        self.players = []
-    
-    def redraw_game(self):
-        self.players = []
-        layout_clear(self.vblayout)
-        #fixme!
                 
         for player in self.game.players:
             player_w = PlayerWidget(player)
